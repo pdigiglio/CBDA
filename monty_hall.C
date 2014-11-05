@@ -43,24 +43,31 @@ change ( unsigned short int win ) {
 	return 0;
 }
 
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  no_change
+ *  Description:  This is an improvement of the previous bool no_change ( unsigned short )
+ *  			  funtion since without loss of generality, takes win = 0.
+ * =====================================================================================
+ */
 bool
 no_change ( void ) {
 	// select a choice
-	if ( gRandom->Integer(N) == 0 )
-		return 1;
+//	if ( gRandom->Integer(N) == 0 )
+//		return 1;
 
-	return 0;
+	return ( gRandom->Integer( N ) == 0 );
 }
 
 bool
 change ( void ) {
-
 	// if you select the wrong door at the beginning, you win
-	if( 0 != gRandom->Integer( N ) )
-		return 1;
+//	if( 0 != gRandom->Integer( N ) )
+//		return 1;
 	
 	// if you select the right door at the beginning, you loose
-	return 0;
+	return ( 0 != gRandom->Integer( N ) );
 }
 
 void
