@@ -38,38 +38,72 @@ beam_calorimeter ( void ) {
 	// length of the array
 	const unsigned short int length = sizeof( E ) / sizeof( double );
 	
+	// evaluates mean from data
+	double sum = *E;
+	for ( unsigned short int i = 1; i < length; ++ i ) {
+		sum += *( E + i );
+	}
+
+	double mean1 = sum / length;
+
+	
 	// find maximum and minimum value
 	const double EMax = TMath::MaxElement( length, E );
 	const double EMin = TMath::MinElement( length, E );
 
 	// number of bins
-	const unsigned int nBins = length + 1;
+	const unsigned int nBins = ( (double) ( EMax - EMin ) / res ) + 1;
 
 	TH1D *histo = new TH1D( "", "", nBins, EMin - .5 * res, EMax + .5 * res );
 	histo->FillN( length, E, 0 );
 
-	histo->Draw();
+
+
+//	return 0;
 
 	// find cumulative distribution
 	TH1D *cumulative = new TH1D( "", "", nBins, EMin - .5 * res, EMax + .5 * res );
-	double sum = 0.;
-	double mean = 0.;
-	for ( unsigned int i = 1; i <= nBins; ++ i ) {
+	cumulative->SetLineColor( kRed );
+
+
+	sum = 0.;
+	double mean = 0., norm = 0.;
+
+	if ( nBins != histo->GetNbinsX() ) {
+		cerr << "Number of bins not matching! Exiting." << endl;
+		cerr << "nBins = " << nBins << ", Actual number of bins = "
+			<< histo->GetNbinsX() << endl;
+		return 1;
+	}
+
+	unsigned short int medianBin = 0;
+	for ( unsigned short int i = 1; i <= nBins; ++ i ) {
 		// evaluate cumulative distribution
 		sum += histo->GetBinContent( i );
-//		cout << sum << endl;
+		if ( sum <= length / 2 )
+			medianBin ++;
 	
 		// fill histogram
 		cumulative->SetBinContent( i, sum );
 
 		// evaluate mean
-		mean += histo->GetXaxis()->GetBinCenter(i) * histo->GetBinContent( i );
-//		mean += histo->GetXaxis()->GetBinLowEdge(i) * histo->GetBinContent( i );
+		mean += histo->GetXaxis()->GetBinCenter( i ) * histo->GetBinContent( i );
+		norm += histo->GetBinContent( i );
+//		cout << histo->GetBinCenter( i ) << " " << histo->GetBinContent( i ) << " " << mean << endl;
 	}
 
+	// normalize
+//	cumulative->Scale( 1 / cumulative->GetBinContent( nBins ) );
 //	cumulative->Draw();
+	histo->Draw("");
 
-	cout << "Mean: " << mean / nBins << endl;
+	unsigned int modeBin =  histo->GetMaximumBin();
+	cout << "Mode: " << histo->GetXaxis()->GetBinCenter( modeBin )  <<
+		" with frequency " << histo->GetBinContent( modeBin ) << endl;
+	cout << "Median: " <<  histo->GetXaxis()->GetBinCenter( medianBin ) << endl;
+	cout << "Mean: " << mean / norm <<
+		"\nMean data: " << mean1 <<
+		"\nMean histo: " << histo->GetMean() << endl;
 
 	return 0;
 }
