@@ -1,2 +1,8 @@
 *.d
 *.so
+
+# data files
+*.dat
+# Images
+*.png
+*.svg
