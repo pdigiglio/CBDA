@@ -1,0 +1,74 @@
+def = "speed"
+if ( ! exists("filename") ) {
+	print "Searching for default file ".def.".dat"
+	filename = def
+} else {
+	print "File name ".filename.".dat"
+}
+
+# Bins default
+bd = 100
+if ( ! exists("bins") ) {
+	print "Default bins: ".bd
+	bins = bd
+} else {
+	print "Bins: ".bins
+}
+
+set font "Helvetica,12"
+
+# Eseguo un'analisi del file in input
+stats filename.".dat" using 1
+
+# Calcolo la dimensione del bin
+binwidth = ( STATS_max - STATS_min ) / bins
+# Fattore di normalizzazione
+Norm = STATS_records * binwidth
+
+# Funzione per creare i bin
+bin(x, width) = width * ( floor( x / width ) + .5 )
+
+#show variables all
+
+set grid
+set style fill pattern 4 bo
+
+# Title for data plot
+lab =  sprintf( "Data\n".\
+				"Entries:\t%G\n".\
+				"Mean:\t%.10E\n".\
+				"St. Dev:\t%.3E\n".\
+				"SDOM:\t%.3E\n".\
+				"Minimum:\t%.3E\n".\
+				"Maximum:\t%.3E",\
+				STATS_records,\
+				STATS_mean,\
+				STATS_stddev,\
+				STATS_stddev / sqrt( STATS_records ),\
+				STATS_min,\
+				STATS_max)
+
+#plot exp( - x /STATS_mean ) / STATS_mean title "exp( - t/t_0) / t_0 ",\
+#plot exp( - ((x - STATS_mean)**2)/(2 * STATS_stddev**2 ) ) / (sqrt(2 * pi) * STATS_stddev), \
+
+# Trova automaticamente il dominio
+set autoscale
+
+set terminal png size 800,600
+set output filename.".png"
+
+set title " # wins Choice / # wins notChoice"
+plot filename.".dat" using ( bin( $1, binwidth ) ):( 1.0 / Norm ) smooth freq with boxes title lab
+
+
+#set table
+#set output filename."_histo.dat"
+
+# Funzione per creare i bin (per TikZ)
+#bin(x, width) = width * ( floor( x / width ) )
+
+#replot
+
+#plot filename.".dat" using ( bin( $1, binwidth ) ):(1.0 / Norm ) smooth freq with boxes title lab
+
+#unset table
