@@ -19,7 +19,7 @@
 int
 beam_calorimeter ( void ) {
 
-	// resolution
+	// detector resolution (= bin size)
 	const double res = .1;
 	// measured energies in GeV
 	double E[] = {
@@ -38,26 +38,25 @@ beam_calorimeter ( void ) {
 	// length of the array
 	const unsigned short int length = sizeof( E ) / sizeof( double );
 	
-	// evaluates mean from data
+	// 1. evaluates mean from data
 	double sum = *E;
-	for ( unsigned short int i = 1; i < length; ++ i ) {
+	for ( unsigned short int i = 1; i < length; ++ i )
 		sum += *( E + i );
-	}
 
 	double mean1 = sum / length;
-
 	
-	// find maximum and minimum value
+
+	// find maximum and minimum value to fix the histogram range
 	const double EMax = TMath::MaxElement( length, E );
 	const double EMin = TMath::MinElement( length, E );
 
 	// number of bins
 	const unsigned int nBins = ( (double) ( EMax - EMin ) / res ) + 1;
 
+	// declare a new histogram
 	TH1D *histo = new TH1D( "", "", nBins, EMin - .5 * res, EMax + .5 * res );
+	// fill the histogram with the data
 	histo->FillN( length, E, 0 );
-
-
 
 //	return 0;
 
@@ -65,16 +64,17 @@ beam_calorimeter ( void ) {
 	TH1D *cumulative = new TH1D( "", "", nBins, EMin - .5 * res, EMax + .5 * res );
 	cumulative->SetLineColor( kRed );
 
-
+	// sum was declared for the first mean
 	sum = 0.;
 	double mean = 0., norm = 0.;
 
-	if ( nBins != histo->GetNbinsX() ) {
-		cerr << "Number of bins not matching! Exiting." << endl;
-		cerr << "nBins = " << nBins << ", Actual number of bins = "
-			<< histo->GetNbinsX() << endl;
-		return 1;
-	}
+	// check is ROOT is cheating me
+//	if ( nBins != histo->GetNbinsX() ) {
+//		cerr << "Number of bins not matching! Exiting." << endl;
+//		cerr << "nBins = " << nBins << ", Actual number of bins = "
+//			<< histo->GetNbinsX() << endl;
+//		return 1;
+//	}
 
 	unsigned short int medianBin = 0;
 	for ( unsigned short int i = 1; i <= nBins; ++ i ) {
