@@ -24,25 +24,35 @@
 
 using namespace std;
 
-	void
-showbits( short int x ) {
-	for( short int i = ( sizeof( short int ) * 8 ) - 1; i >= 0; -- i )
-		( x & ( 1 << i ) ) ? putchar('1') : putchar('0');
+	std::string
+getBits ( unsigned char x ) {
 
-	printf("\n");
-}	/* -----  end of function shobbits  ----- */
+	std::string output;
+	for( short int i = ( sizeof( unsigned char ) * 8 ) - 1; i >= 0; -- i )
+		( x & ( 1 << i ) ) ? output.append("1") : output.append("0");
+	return output;
+}		/* -----  end of function getbits  ----- */
+
+	void
+showbits( unsigned char x ) {
+	std::cout << getBits( x ) << std::endl;
+//	for( short int i = ( sizeof( unsigned char ) * 8 ) - 1; i >= 0; -- i )
+//		( x & ( 1 << i ) ) ? putchar('1') : putchar('0');
+//
+//	printf("\n");
+}	/* -----  end of function showbits  ----- */
 
 
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  new_sequence
+ *         Name:  newSequence
  *  Description:  find the new sequence from the one given as argument
  * =====================================================================================
  */
-	unsigned short int
-new_sequence ( unsigned short int oldSeq ) {
+	unsigned char
+newSequence ( unsigned char oldSeq ) {
 	// (0,..., 0, 0, c2, c1 )
-	unsigned short newSeq = oldSeq & 3;
+	unsigned char newSeq = oldSeq & 3;
 	// (0,..., 0, c2, c1, 0 )
 	newSeq <<= 1;
 	// (0,..., 0, c2, c1, c2 )
@@ -50,57 +60,78 @@ new_sequence ( unsigned short int oldSeq ) {
 
 	// (0,..., 0, c2, c1, c2 )
 	return ( newSeq ^ 4 );
-}	/* -----  end of function new_sequence  ----- */
+}	/* -----  end of function newSequence  ----- */
+
 
 	int
-//penney_ante ( void ) {
-main ( void ) {
+penney_ante ( void ) {
+//main ( void ) {
+
+	// set random seed
 	gRandom->SetSeed( 0 );
 
 	// number of coin tosses
 	const int Tries = 1000000;
 
 	// 7 is 00...00111 in binary
-	const unsigned short int cut = 7;
-
-	// choose a random 3-sequence
-	const unsigned short Choice = gRandom->Integer( 8 );
-//	showbits( Choice );
-	const unsigned short notChoice = new_sequence( Choice );
-//	showbits( notChoice );
-
+	const unsigned char cut = 7;
+   
 	// histogram
-	TH1I *histo = new TH1I( "Coin Toss", "Wins;Sequencences;N. of wins", 2, .5, 2.5 );
+	TH1I *histo = new TH1I( "Coin Toss", "Wins;Sequencences;N. of wins", 8, -.5, 7.5 );
+	TH1I *notHisto = new TH1I( "Coin Toss", "Wins;Sequencences;N. of wins", 8, -.5, 7.5 );
+	notHisto->SetLineColor( kRed );
 
-	// list of results (first 3 outcomes taken randomly)
-	unsigned short int results = gRandom->Integer(8);
-	unsigned int i1 = 0, i2 = 0;
-	for ( unsigned int i = 0; i < Tries; ++ i ) {
+	unsigned char notChoice;
+	unsigned char results;
+	// string to edit bin labels
+	std::string binName;
 
-		// check if I got the right (non-)Choice
-		if( Choice == results ) {
-//			histo->Fill( 1, 1 );
-			++ i1;
-//			cout << "Choice wins: " << histo->GetBinContent( 1 ) << endl;
+	bool notWin;
+	// cycle over all possible combinations of a 3-string of {1,0} values
+	for ( unsigned char Choice = 0; Choice < 8; ++ Choice ) {
+//		showbits( Choice );
+
+		// give the value to notChoice
+		notChoice = newSequence( Choice );
+//		showbits( notChoice );
+
+		// cut the first 5 zeros in the representation
+		binName = getBits( Choice ).substr( 5 );
+		// set the bin labels to the string of choices
+		histo->GetXaxis()->SetBinLabel( Choice + 1, (char *) binName.c_str() );
+
+		// play the game Tries times
+		for ( register unsigned int i = 0; i < Tries; ++ i ) {
+
+			// pick up a random 3-string
+			results = (unsigned char) gRandom->Integer(8);
+
+			// till someone wins
+			notWin = true;
+			while (  notWin ) {
+				// check if I got the right (non-)Choice
+				if( Choice == results ) {
+					histo->Fill( (unsigned) Choice, 1 );
+					notWin = false;
+				}
+				// don't put 'else' because sequences can be equal
+				if ( notChoice == results ) {
+					notHisto->Fill( (unsigned) Choice, 1 );
+					notWin = false;
+				}
+
+				// free a bit
+				results <<= 1;
+				// push the new coin toss
+				results |= gRandom->Integer( 2 );
+				// cut the result
+				results &= cut;
+			}
 		}
-		if ( notChoice == results ) {
-//			histo->Fill( 2, 1 );
-			++ i2;
-//			cout << "notChoice wins: " << histo->GetBinContent( 2 ) << endl;
-		}
-
-		// free a bit
-		results <<= 1;
-		// push the new coin toss
-		results |= gRandom->Integer( 2 );
-		// cut the result
-		results &= cut;
 	}
 
-	cout << (long double) i1/i2 << endl;
-//	cout << "choice: " << i1 << " not-choice: " << i2 << endl;
+	histo->Draw();
+	notHisto->Draw("same");
 
-//	histo->Draw();
-	exit(0);
 	return 0;
 }		/* -----  end of function penny_ante  ----- */
