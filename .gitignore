@@ -1,8 +1,17 @@
+# dependencies and shared libraries
 *.d
 *.so
 
 # data files
 *.dat
+*.txt
+# log files
+*.log
+
 # Images
 *.png
 *.svg
+
+# ignore built documentation
+latex/
+html/
