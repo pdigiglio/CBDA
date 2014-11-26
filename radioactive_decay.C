@@ -61,7 +61,7 @@ radioactive_decay ( void ) {
 //			Infinity(),   /* maximum value (to) */
 //			2 );          /* parameters number */
 	
-	cout << "Decay probability per second: " << myFunc->Integral( 9.2, 2000 /* Infinity() */, pars ) << endl;
+	cerr << "Decay probability per second: " << myFunc->Integral( 9.2, 2000 /* Infinity() */, pars ) << endl;
 
 //	for ( unsigned int j = 0; j < 1000; ++ j )
 //		cout << gRandom->Gaus( mean, sigma ) << endl;
@@ -89,7 +89,7 @@ radioactive_decay ( void ) {
 		}
 	}
 
-	cout << "Time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
+	cerr << "Time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
 	histo->Draw();
 	return ;
 }		/* -----  end of function radioactive_decay.C  ----- */
