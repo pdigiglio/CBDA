@@ -26,22 +26,28 @@
 #include "TF1.h"
 #include "TH1D.h"
 #include "TMath.h"
+#include "TCanvas.h"
+
+#include <iostream>
 
 using namespace TMath;
+using namespace std;
 
 	double
 myGauss ( double *x, double *p ) {
-	return Exp( - x[0] * x[0] / ( 2 * p[1] * p[1] ) ) / ( Sqrt( 2 * Pi() ) * p[1] ); 
+	return Exp( - ( x[0] - p[0] ) * ( x[0] - p[0] ) / ( 2 * p[1] * p[1] ) ) / ( Sqrt( 2 * Pi() ) * p[1] ); 
 }
 
-	void
+	int
+//main ( void ) {
 radioactive_decay ( void ) {
+
 	/// Initialize the seed for the random generator (the default argument is `0`).
 	gRandom->SetSeed();
 
-
-	double mean = 5.; /*! Fix the mean of kinetic energy to \f$5\,\textup{MeV}\f$. */
-	double sigma = 1.; /*! Fix the std. deviation of kinetic energy to \f$1\,\textup{MeV}\f$. */
+	const double mean = 5.; /*! Fix the mean of kinetic energy to \f$5\,\textup{MeV}\f$. */
+	const double sigma = 1.; /*! Fix the std. deviation of kinetic energy to \f$1\,\textup{MeV}\f$. */
+	const double threshold = 9.2;
 
 	const double pars[] = { mean, sigma };
 
@@ -53,43 +59,63 @@ radioactive_decay ( void ) {
 			Infinity(),   /* maximum value (to) */
 			2 );          /* parameters number */
 
-//	/// Declare a `TF1` function containing the built-in `gaus()` function.
-//	TF1 *Func = new TF1(
-//			"G",         /* name */
-//			"gaus(5,1)",      /* what function to call */
-//			- Infinity(), /* minimum value (from) */
-//			Infinity(),   /* maximum value (to) */
-//			2 );          /* parameters number */
+	/// Declare a `TF1` function containing the built-in `TMath::Gaus()` function.
+	TF1 *Func = new TF1(
+			"G",                       /* name */
+			"TMath::Gaus(x, 5, 1, 1)", /* what function to call */
+			- Infinity(),              /* minimum value (from) */
+			Infinity());               /* maximum value (to) */
 	
-	cerr << "Decay probability per second: " << myFunc->Integral( 9.2, 2000 /* Infinity() */, pars ) << endl;
-
-//	for ( unsigned int j = 0; j < 1000; ++ j )
-//		cout << gRandom->Gaus( mean, sigma ) << endl;
+	/// To get the probability of a decay per second I evaluate
+	/// \f[
+	/// \int_{9.2}^\infty \frac{\mathrm{e}^{(x-5)^2\!/2}}{\sqrt{2\pi}\,\sigma} \,\mathrm{d}x 
+	/// \f]
+	/// using both my function `myFunc` and `Func`.
+	/// Actually ROOT doesn't seem to be able to handle \f$(\pm\infty)\f$-limits for 
+	/// integrals so I evaluate the integral from \f$9.2\,\f$MeV to some upper limit 
+	/// \f$E_0\f$ such that \f$(5 - E_0)/\sigma \gg 1\f$, for example \f$E_0 = 30\f$.
+	cerr << "Decay probability per second (using myGauss): " << myFunc->Integral( threshold, 30, pars ) << endl;
+	cerr << "Decay probability per second (using TMath::Gaus): " << Func->Integral( threshold, 30 ) << endl;
 
 	unsigned int nuclei = 200000;
-	const unsigned int time = 10000;
+	const unsigned int time = 1000;
 
-	TH1D *histo = new TH1D( "", ";Time [s]; Nuclei", time, 0, time );
+	TH1I *ncl = new TH1I( "", "Radioactive decay;Time [s]; Nuclei", time, 0, time );
+	TH1I *decay = new TH1I( "", "Decays per second;N. of decays; Occurrences", 30, 0, 30 );
+
 
 	clock_t start = clock();
-//	#pragma omp parallel for ordered
 	register unsigned int n;
 	for ( unsigned int t = 1; t <= time; ++ t ) {
-		cerr << t << endl;
-		cout << nuclei << endl;
+//		cerr << t << endl;
+//		cout << nuclei << endl;
 
-//		cout << t << " " << nuclei << endl;
-		// fill the histogram
-		histo->SetBinContent( t, nuclei );
+		/// Fill the histogram `ncl` with the current value of `ncl` variable.
+		ncl->SetBinContent( t, nuclei );
 
 		for ( n = nuclei; n > 0; -- n ) {
 			/// If the random value exceeds the threshold decrease the number of nuclei.
-			if( gRandom->Gaus( mean, sigma ) > 9.2 )
+			if( gRandom->Gaus( mean, sigma ) > threshold )
 				-- nuclei;
 		}
+
+		/// After one step, I get the number of nuclei from the `ncl` histogram,
+		/// substract the current number of nuclei and fill `decay` histogram
+		/// with this value.
+		decay->Fill( ncl->GetBinContent( t ) - nuclei );
 	}
 
 	cerr << "Time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
-	histo->Draw();
-	return ;
+
+	ncl->Draw();
+
+	// create new TCanvas for the new plot
+	new TCanvas();
+	// draw errors
+	decay->Draw("E");
+	// set color line and draw line
+//	decay->SetLineColor( kRed );
+	decay->Draw("Csame");
+
+	return 0;
 }		/* -----  end of function radioactive_decay.C  ----- */
