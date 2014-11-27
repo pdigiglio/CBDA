@@ -39,16 +39,17 @@ myGauss ( double *x, double *p ) {
 }
 
 	int
-//main ( void ) {
-radioactive_decay ( void ) {
+main ( void ) {
+//radioactive_decay ( void ) {
 
 	/// Initialize the seed for the random generator (the default argument is `0`).
 	gRandom->SetSeed();
 
-	const double mean = 5.; /*! Fix the mean of kinetic energy to \f$5\,\textup{MeV}\f$. */
-	const double sigma = 1.; /*! Fix the std. deviation of kinetic energy to \f$1\,\textup{MeV}\f$. */
-	const double threshold = 9.2;
+	const double mean = 5.;       /*! Fix the mean of kinetic energy to \f$5\,\textup{MeV}\f$. */
+	const double sigma = 1.;      /*! Fix the std. deviation of kinetic energy to \f$1\,\textup{MeV}\f$. */
+	const double threshold = 9.2; /*! Fix the threshold of kinetic energy to \f$9.2\,\textup{MeV}\f$. */
 
+	// array of parameters to pass to myGauss
 	const double pars[] = { mean, sigma };
 
 	/// Declare a `TF1` function containing `myGauss` function.
@@ -74,21 +75,30 @@ radioactive_decay ( void ) {
 	/// Actually ROOT doesn't seem to be able to handle \f$(\pm\infty)\f$-limits for 
 	/// integrals so I evaluate the integral from \f$9.2\,\f$MeV to some upper limit 
 	/// \f$E_0\f$ such that \f$(5 - E_0)/\sigma \gg 1\f$, for example \f$E_0 = 30\f$.
-	cerr << "Decay probability per second (using myGauss): " << myFunc->Integral( threshold, 30, pars ) << endl;
-	cerr << "Decay probability per second (using TMath::Gaus): " << Func->Integral( threshold, 30 ) << endl;
+	cerr << "Decay probability per second (using myGauss): "
+		<< myFunc->Integral( threshold, 30, pars ) << endl;
+	cerr << "Decay probability per second (using TMath::Gaus): "
+		<< Func->Integral( threshold, 30 ) << endl;
 
+
+	/*-----------------------------------------------------------------------------
+	 *  NOW IT COMES THE ACTUAL SIMULATION
+	 *-----------------------------------------------------------------------------*/
 	unsigned int nuclei = 200000;
-	const unsigned int time = 1000;
+	const unsigned int time = 10000;
 
 	TH1I *ncl = new TH1I( "", "Radioactive decay;Time [s]; Nuclei", time, 0, time );
 	TH1I *decay = new TH1I( "", "Decays per second;N. of decays; Occurrences", 30, 0, 30 );
 
-
+	// take initial time
 	clock_t start = clock();
+
+	double nuclei_err = 0;
 	register unsigned int n;
+	// start cycling over time
 	for ( unsigned int t = 1; t <= time; ++ t ) {
 //		cerr << t << endl;
-//		cout << nuclei << endl;
+		cout << t << " "<< nuclei << " " << nuclei_err << endl;
 
 		/// Fill the histogram `ncl` with the current value of `ncl` variable.
 		ncl->SetBinContent( t, nuclei );
@@ -103,6 +113,11 @@ radioactive_decay ( void ) {
 		/// substract the current number of nuclei and fill `decay` histogram
 		/// with this value.
 		decay->Fill( ncl->GetBinContent( t ) - nuclei );
+
+		// update the error
+		nuclei_err *= nuclei_err;
+		nuclei_err += (double) ( ncl->GetBinContent( t ) - nuclei );
+		nuclei_err = sqrt( nuclei_err );
 	}
 
 	cerr << "Time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
