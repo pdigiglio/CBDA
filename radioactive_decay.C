@@ -48,6 +48,7 @@ radioactive_decay ( void ) {
 	const double mean = 5.;       /*! Fix the mean of kinetic energy to \f$5\,\textup{MeV}\f$. */
 	const double sigma = 1.;      /*! Fix the std. deviation of kinetic energy to \f$1\,\textup{MeV}\f$. */
 	const double threshold = 9.2; /*! Fix the threshold of kinetic energy to \f$9.2\,\textup{MeV}\f$. */
+	const unsigned short int efficiency = 6;
 
 	// array of parameters to pass to myGauss
 	const double pars[] = { mean, sigma };
@@ -81,7 +82,7 @@ radioactive_decay ( void ) {
 	 *  NOW IT COMES THE ACTUAL SIMULATION
 	 *-----------------------------------------------------------------------------*/
 	unsigned int nuclei = 200000;
-	const unsigned int time = 10000;
+	const unsigned int time = 1000;
 
 	TH1I *ncl = new TH1I( "", "Radioactive decay;Time [s]; Nuclei", time, 0, time );
 	TH1I *decay = new TH1I( "", "Decays per second;N. of decays; Occurrences", 20, 0, 20 );
@@ -123,7 +124,6 @@ radioactive_decay ( void ) {
 
 		/// Modelize the detector which detects \f$60\,\f$\% of the alpha-particle emitted.
 		/// The number of decayd nuclei equals the number of \f$\alpha\f$-particles.
-		const unsigned short int efficiency = 6;
 		unsigned int detected = 0;
 		for ( unsigned int j = 0; j < ncl->GetBinContent( t ) - nuclei; ++ j ) {
 			if( gRandom->Integer(10) < efficiency )
@@ -137,17 +137,27 @@ radioactive_decay ( void ) {
 
 	ncl->Draw();
 
+	TF1 *fit = new TF1( "fit", Form( "%d * TMath::Poisson(x, [0])", time ), 0, 20 );
+	fit->SetParameter( 0, 3. );
+
 	// create new TCanvas for the new plot
 	new TCanvas();
+
+	decay->Fit( fit );
 	// draw errors
 	decay->Draw("E");
 	// set color line and draw line
 //	decay->SetLineColor( kRed );
-	decay->Draw("Csame");
+//	decay->Draw("Csame");
 
 	new TCanvas();
+
+	fit->SetParameter( 0, 3. * efficiency / 10 );
+	
+	dtc->Fit( fit );
 	dtc->Draw( "E" );
-	dtc->Draw( "Csame" );
+//	cout << dtc->Integral() << endl;
+//	dtc->Draw( "Csame" );
 
 	return 0;
 }		/* -----  end of function radioactive_decay.C  ----- */
