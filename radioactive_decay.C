@@ -85,8 +85,8 @@ radioactive_decay ( void ) {
 	const unsigned int time = 1000;
 
 	TH1I *ncl = new TH1I( "", "Radioactive decay;Time [s]; Nuclei", time, 0, time );
-	TH1I *decay = new TH1I( "", "Decays per second;N. of decays; Occurrences", 20, 0, 20 );
-	TH1I *dtc = new TH1I( "", "Alpha detected per second;N. of decays; Occurrences", 20, 0, 20 );
+	TH1I *decay = new TH1I( "", "Decays per second;N. of decays; Occurrences", 16, -.5, 15.5 );
+	TH1I *dtc = new TH1I( "", "Alpha detected per second;N. of decays; Occurrences", 16, -.5, 15.5 );
 
 	// take initial time
 	clock_t start = clock();
@@ -133,12 +133,10 @@ radioactive_decay ( void ) {
 		dtc->Fill( detected );
 	}
 
-	cerr << "Time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
-
 	ncl->Draw();
 
 	TF1 *fit = new TF1( "fit", Form( "%d * TMath::Poisson(x, [0])", time ), 0, 20 );
-	fit->SetParameter( 0, 3. );
+	fit->SetParameter( 0, decay->GetMean() );
 
 	// create new TCanvas for the new plot
 	new TCanvas();
@@ -146,18 +144,25 @@ radioactive_decay ( void ) {
 	decay->Fit( fit );
 	// draw errors
 	decay->Draw("E");
+//	fit->Draw("same");
+	cout << "[decay] Histo mean: " << decay->GetMean() << " Fit par[0]: " << fit->GetParameter(0) << endl;
 	// set color line and draw line
 //	decay->SetLineColor( kRed );
 //	decay->Draw("Csame");
 
 	new TCanvas();
 
-	fit->SetParameter( 0, 3. * efficiency / 10 );
+	TF1 *fitDetected = new TF1( "fitDetected", Form( "%d * TMath::Poisson(x, [0])", time ), 0, 20 );
+	fitDetected->SetParameter( 0, dtc->GetMean() );
 	
-	dtc->Fit( fit );
+	dtc->Fit( fitDetected );
 	dtc->Draw( "E" );
+	cout << "[dtc] Histo mean: " << dtc->GetMean() << " Fit par[0]: " << fitDetected->GetParameter(0) << endl;
 //	cout << dtc->Integral() << endl;
 //	dtc->Draw( "Csame" );
+
+	// prints execution time
+	cerr << "Time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
 
 	return 0;
 }		/* -----  end of function radioactive_decay.C  ----- */
