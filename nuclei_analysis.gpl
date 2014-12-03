@@ -1,0 +1,15 @@
+plot "nuclei.txt" using 1:(log($2)):($3/$2) w ye
+
+f( x ) = log( 200000 ) - x / b
+# The value of b is got from a previous fit with less points
+b = 74343.64194214231
+set fit errorvariables
+fit f( x ) "nuclei.txt" using 1:(log($2)):($3/$2) via b
+replot f(x)
+
+
+#print "a = log( A ) = ", a, " +/- ", a_err
+#print "A = exp( a ) = ", exp( a ), " +/- ", a_err * exp( a )
+print "life-time = ", b , " +/- ", b_err, " seconds"
+print "decay probability per particle per second = ", 1 / b, " +/- ", b_err/ ( b * b )
+print "decays per second = ", 200000 / b, " +/- ", 200000 * b_err/ ( b * b )
