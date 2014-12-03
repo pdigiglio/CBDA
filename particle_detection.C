@@ -1,7 +1,7 @@
 /**
  *
  *
- *           @name  particle_detectio.C
+ *           @name  particle_detection.C
  *
  *        @version  1.0
  *           @date  11/29/2014 (06:29:02 PM)
@@ -31,6 +31,7 @@ myBinom ( double *x, double *par ) {
 
 	void
 particle_detectio () {
+    /// Fix the detector efficiency.
 	const double p = .989;
 	const double recur = p / ( 1 - p );
 	const unsigned int n = 100;
