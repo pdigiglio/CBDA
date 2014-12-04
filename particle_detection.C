@@ -42,7 +42,7 @@ particle_detection () {
 	 * \f[
 	 * P(k+1;n,p) = \frac{n-k}{k+1}\frac{p}{1-p}\,P(k;n,p).
 	 * \f]
-     * The recursion is performed i.e. from \f$k=n\f$ to \f$k=0\f$. Since \f$p = 0,989 \simeq1\f$,
+     * The recursion is performed backwards: from \f$k=n\f$ to \f$k=0\f$. Since \f$p = 0,989 \simeq1\f$,
      * when one evaluates \f$P(0;n,p) = (1-p)^n \simeq 10^{-n}\f$, for \f$n\gtrsim15\f$ (in `double`
      * precision) one would get a vanishing value at the first step. Then the corrisponding plot 
      * would be a constant zero-plot.
