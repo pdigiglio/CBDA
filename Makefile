@@ -18,7 +18,7 @@ all: $(MAIN)
 
 # Clean directory from dependences, objects and executable
 clean:
-	@-rm --recursive --force --verbose *.o *.d
+	@-rm --recursive --force --verbose *.o *.d *.so
 
 distclean: clean
 	@-rm --recursive --force --verbose $(MAIN)
