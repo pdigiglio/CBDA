@@ -10,6 +10,10 @@ using namespace TMath;
 
 /// @brief Implementation of a two-dimemsional Gaussian function in Cartesian coordinates.
 ///
+/// In this function \f$\sigma_x = \sigma_y\f$ so only one parameter for \f$\sigma\f$ is
+/// required. This leads to a distribution which is invatiant under rotations around the
+/// point \f$(\langle x \rangle, \langle y \rangle)\f$.
+///
 /// @param x Array of variables, in this case \f$(x,y)\f$
 /// @param p Array of parameters, in this case \f$(\langle x\rangle, \langle y \rangle, \sigma )\f$ 
     double
