@@ -26,7 +26,12 @@
 #include "TMath.h"
 #include "TCanvas.h"
 
+
+#include <iostream>
+#include <time.h> // for CLOCKS_PER_SEC macro
+
 using namespace TMath;
+using namespace std;
 
 /// @brief 2-dimensional Gaussian function improved
 ///
@@ -77,13 +82,22 @@ my2DGaussRot( double *x, double *p ) {
 	return my2DGaussImp( y, p );
 }
 	int
+//main ( void ) {
 error_ellipse ( void ) {
+
+	time_t start = clock();
+
+	/// First fix distribution parameters. They are supposed to remain constant during
+	/// the execution of the script so are declared as `const`.
+
 	// fix parameters
 	const double meanX = 0.;
 	const double meanY = 0.;
 	const double sigmaX = 1.;
 	const double sigmaY = 2.;
 	const double phi = 30 * DegToRad();
+
+	/// Define a 2D gaussian distribution using my function `my2DGaussImp()`.
 
 	// non-rotated gaussian
 	TF2 *nrG = new TF2( "NRG", my2DGaussRot, -6, 6, -6, 6, 4);
@@ -97,6 +111,9 @@ error_ellipse ( void ) {
 	nrG->DrawCopy( "surf3" );
 
 
+	/// Now define a gaussian with the same parameters. It's rotated around the mean
+	/// by an angle \f$\phi = \pi/6 = 30\deg\f$.
+
 	// rotated gaussian
 	TF2 *rG = new TF2( "NRG", my2DGaussRot, -6, 6, -6, 6, 5);
 	rG->SetParameters( meanX, sigmaX, meanY, sigmaY, phi );
@@ -108,21 +125,29 @@ error_ellipse ( void ) {
 	new TCanvas( "rG", "Rotated Gaussian" );
 	rG->DrawCopy( "surf3" );
 
+	/// Set the contour levels I want to be plotted (in a regular \f$xy\f$-plane)
+	/// @attention Contour level values _must_ be given in increasing order otherwhise
+	/// you will be plotter some "fancy"\dots{}
+
 	// contour levels
 	double clvs[] = {
-//		nrG->Eval( meanX, meanY),
-		nrG->Eval( meanX, meanY) / Sqrt( E() ),
+		nrG->Eval( meanX, meanY) / ( Sqrt( E() ) * E() ),
 		nrG->Eval( meanX, meanY) / E(),
-//		nrG->Eval( meanX, meanY) / ( Sqrt( E() ) * E() )
+		nrG->Eval( meanX, meanY) / Sqrt( E() ),
+		nrG->Eval( meanX, meanY)
 	};
 
 	nrG->SetContour( sizeof(clvs) / sizeof(double), clvs );
 	new TCanvas("contour", "contour levels");
+    nrG->SetLineWidth(.07);
 	nrG->Draw();
 
 	rG->SetContour( sizeof(clvs) / sizeof(double), clvs );
 	rG->SetLineColor( kBlue );
+    rG->SetLineWidth(.07);
 	rG->Draw("same");
+
+	cerr << "Execution time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
 
 	return 0;
 }
