@@ -60,6 +60,11 @@ my2DGaussImp( double *x, double *p ) {
 ///
 /// @attention The angle _must_ be given in radiants!
 ///
+/// @attention If you want to speed up this function, you can add one more parameter.
+/// Then, instead of passing the angle as 5th argument, you pass \f$\cos\phi\f$ and 
+/// \f$\sin\phi\f$ as 5th and 6th parameters. In this way you can evaluate them once and 
+/// use their value for each call of the function.
+///
 /// @param x Array of variables, in this case \f$(x,y)\f$
 /// @param p Array of parameters, in this case \f$(\langle x\rangle, \sigma_x, \langle y \rangle, \sigma_y, \phi )\f$ 
 	double
@@ -81,9 +86,35 @@ my2DGaussRot( double *x, double *p ) {
 	// Now `p[]` has lenght of 5 but the 5th parameter will be ignored in `my2DGaussImp`.
 	return my2DGaussImp( y, p );
 }
+
+/// @brief 2-dimensional rotated Gaussian function _speeded up_
+///
+/// This function implements the trick presented in the description of my2DGaussRot(). There
+/// is one more parameter and chey are interpreted as \f$\cos\phi\f$ and \f$\sin\phi\f$.
+///
+/// @param x Array of variables, in this case \f$(x,y)\f$
+/// @param p Array of parameters, in this case \f$(\langle x\rangle, \sigma_x, \langle y \rangle,
+/// \sigma_y, \cos \phi, \sin\phi )\f$ 
+	double
+my2DGaussRotSpeedUp( double *x, double *p ) {
+	*x -= *p;
+	x[1] -= p[2];
+
+	// evaluate the new point
+	double y[] = {
+		(*x) * p[4] - x[1] * p[5],
+		x[1] * p[4] + (*x) * p[5]
+	};
+
+	// return the value
+	// Now `p[]` has lenght of 5 but the 5th parameter will be ignored in `my2DGaussImp`.
+	return my2DGaussImp( y, p );
+}
+
+
 	int
-//main ( void ) {
-error_ellipse ( void ) {
+main ( void ) {
+//error_ellipse ( void ) {
 
 	time_t start = clock();
 
@@ -99,20 +130,25 @@ error_ellipse ( void ) {
 
 	/// Define a 2D gaussian distribution using my function `my2DGaussImp()`.
 
+	time_t start_plot = clock();
+
 	// non-rotated gaussian
-	TF2 *nrG = new TF2( "NRG", my2DGaussRot, -6, 6, -6, 6, 4);
+	TF2 *nrG = new TF2( "NRG", my2DGaussImp, -6, 6, -6, 6, 4);
 	nrG->SetParameters( meanX, sigmaX, meanY, sigmaY );
 
     nrG->SetNpx(100);
     nrG->SetNpy(100);
     nrG->SetLineWidth(.01);
 
-	new TCanvas( "nrG", "Non-rotated Gaussian" );
+	TCanvas *nrC = new TCanvas( "nrG", "Non-rotated Gaussian" );
 	nrG->DrawCopy( "surf3" );
 
+	cerr << "my2DGaussImp: " << ( clock() - start_plot ) /CLOCKS_PER_SEC << endl;
 
 	/// Now define a gaussian with the same parameters. It's rotated around the mean
 	/// by an angle \f$\phi = \pi/6 = 30\deg\f$.
+
+	start_plot = clock();
 
 	// rotated gaussian
 	TF2 *rG = new TF2( "NRG", my2DGaussRot, -6, 6, -6, 6, 5);
@@ -122,8 +158,24 @@ error_ellipse ( void ) {
     rG->SetNpy(100);
     rG->SetLineWidth(.01);
 
-	new TCanvas( "rG", "Rotated Gaussian" );
+	TCanvas *rC = new TCanvas( "rG", "Rotated Gaussian" );
 	rG->DrawCopy( "surf3" );
+
+	cerr << "my2DGauss: " << ( clock() - start_plot ) /CLOCKS_PER_SEC << endl;
+	start_plot = clock();
+
+	// rotated gaussian
+	TF2 *rGsu = new TF2( "NRG", my2DGaussRotSpeedUp, -6, 6, -6, 6, 6);
+	rGsu->SetParameters( meanX, sigmaX, meanY, sigmaY, Cos( phi ), Sin( phi ) );
+
+    rGsu->SetNpx(100);
+    rGsu->SetNpy(100);
+    rGsu->SetLineWidth(.01);
+
+	TCanvas *rCsu = new TCanvas( "rGsu", "Rotated Gaussian Speed Up" );
+	rGsu->DrawCopy( "surf3" );
+
+	cerr << "my2DGaussRotSpeedUp: " << ( clock() - start_plot ) /CLOCKS_PER_SEC << endl;
 
 	/// Set the contour levels I want to be plotted (in a regular \f$xy\f$-plane)
 	/// @attention Contour level values _must_ be given in increasing order otherwhise
@@ -146,6 +198,10 @@ error_ellipse ( void ) {
 	rG->SetLineColor( kBlue );
     rG->SetLineWidth(.07);
 	rG->Draw("same");
+
+	delete nrC;
+	delete rC;
+	delete rCsu;
 
 	cerr << "Execution time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
 
