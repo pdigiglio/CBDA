@@ -33,15 +33,21 @@ using namespace std;
 	int
 multivariate_distribution ( TString inTree = "multivariateDistrData.root" ) {
 	
+	/// Instance a `TTree` object and associate it with the input `TTree`.
 	TTree *multivar = new TTree( inTree, "name" );
 	multivar->Print();
 
+	/// Instance an input file and open my input `TTree`.
 	TFile *inFile = TFile::Open( inTree, "READ" );
 	if ( ( ! inFile ) || inFile->IsZombie()  ) {
 		cerr << " >>> Error in opening " << inTree << endl;
 		return 1;
 	}
-	
+
+	/// Define a null `TTree` pointer and associate it with the input file via
+	/// the method `TFile::GetOpject()`.
+	///
+	/// @attention This will return a `NULL` pointer if the input `TTree` is empty!
 	TTree *multiFromFile = NULL;
 	inFile->GetObject( "multivariateDistrData", multiFromFile );
 	if( ! multiFromFile ) {
