@@ -93,13 +93,14 @@ multivariate_distribution ( TString inTree = "multivariateDistrData.root" ) {
 	double cov2 = 0.;
 	
 
-	/// Declare a dummy 2D histogram pointer to evaluate covariance;
-	TH2D *dummy = NULL;
+	/// Declare a dummy 2D histogram pointer to evaluate covariance.
+	/// @attention When you do an histogram, you _lose_ information
+//	TH2D *dummy = NULL;
 	for ( unsigned short int i = 1; i <= D; ++ i ) {
 		for ( unsigned short int j = 0; j < i; ++ j ) {
 
 			// Create empty dummy histogram.
-			dummy = new TH2D();
+//			dummy = new TH2D();
 
 			// cycle over all entries
 			for ( unsigned int event = 0; event < multiFromFile->GetEntries() ; ++ event ) {
@@ -107,7 +108,7 @@ multivariate_distribution ( TString inTree = "multivariateDistrData.root" ) {
 				multiFromFile->GetEntry( event );
 
 				// fill histogram
-				dummy->Fill( events[i], events[j] );
+//				dummy->Fill( events[i], events[j] );
 
 				// evaluate covariance
 				cov += ( events[i] - mean[i] ) * ( events[j] - mean[j] );
@@ -118,10 +119,10 @@ multivariate_distribution ( TString inTree = "multivariateDistrData.root" ) {
 			}
 
 			// print results
-			cout << cov / multiFromFile->GetEntries()
+			cout << cov / ( multiFromFile->GetEntries() - 1 )
 				<< " (" << cov1 / multiFromFile->GetEntries() - mean[i] * mean[j] << ")"
 				<< " [" << cov2 / multiFromFile->GetEntries() << "]"
-				<< " {" << dummy->GetCovariance() << "}"
+//				<< " {" << dummy->GetCovariance() << "}"
 				<< "\t";
 
 			// reset variables
