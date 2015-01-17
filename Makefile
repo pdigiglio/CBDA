@@ -17,11 +17,30 @@ MODULES	= $(COMMON)
 all: $(MAIN)
 
 # Clean directory from dependences, objects and executable
+found_src_cpp  = $(shell find ./* -name "*.cpp")
+found = $(found_src_cpp:.cpp=)
+
+found_src_cc = $(shell find ./* -name "*.cc")
+found += $(found_src_cc:.cc=)
+
+found_src_h = $(shell find ./* -name "*.h")
+found += $(found_src_h:.h=)
+
+found_src_c = $(shell find ./* -name "*.c")
+found += $(found_src_c:.c=)
+
+found_src_C = $(shell find ./* -name "*.C")
+found += $(found_src_C:.C=)
+found += $(found_src_C:.C=_C.so)
+
+
 clean:
-	@-rm --recursive --force --verbose *.o *.d *.so
+	@-rm --recursive --force --verbose $(addsuffix .o, $(found)) $(addsuffix .so, $(found)) $(addsuffix .d, $(found)) $(found)
+
+#	@echo $(found)
 
 distclean: clean
-	@-rm --recursive --force --verbose $(MAIN)
+	@-rm --recursive --force --verbose $(MAIN)  $(found)
 
 # Directory for modules and headers
 MDIR	= ../modules
@@ -42,10 +61,14 @@ endif
 # Creo l'opzione da passare al compilatore per le librerie: aggiungo
 # il prefisso '-l' a tutte le librerie specificate in $(LBS) e il pre-
 # fisso '-L' alle directory dove si trovano le librerie
-LDFLAGS	= $(addprefix -l,$(LBS))
-ifneq ($(LBSPATH),)
-	LDFLAGS += $(addprefix -L,$(LBSPATH))
-endif
+LDFLAGS = $(addprefix -l,$(LBS))
+#ifneq($(LBS),)
+#	LDFLAGS	+= $(addprefix -l,$(LBS))
+#	$(info Adding $(LBS) to LDFLAGS)
+#endif
+#ifneq ($(LBSPATH),)
+#	LDFLAGS += $(addprefix -L,$(LBSPATH))
+#endif
 
 # Add ROOT libaries
 ROOT = `root-config --libs --cflags`
@@ -75,7 +98,8 @@ STD		= gnu++11
 
 # Opzioni
 CXXFLAGS = -W -Wall -Wextra -Wunreachable-code -Wunused -Wformat-security -Wmissing-noreturn \
-		   -O3 -pedantic -std=$(STD) -masm=$(MASM) -m64 -march=$(MARCH) -mtune=$(MARCH) $(ROOT) -fopenmp -time
+		   -O3 -pedantic -std=$(STD) -masm=$(MASM) -march=$(MARCH) -mtune=$(MARCH) -fopenmp -time \
+		   $(ROOT)
 
 # Add includes
 CXXFLAGS += $(INCPATH)
@@ -115,29 +139,10 @@ $(MAIN): %: $(OBJS) Makefile
 		"$(CXX) -o `tput bold`$@`tput sgr0` `tput setaf 2`$(OBJS)`tput sgr0` $(CXXFLAGS)\n"
 	@$(CXX) $(OBJS) -o $@ $(CXXFLAGS)
 
-$(ANALISI): %: %.o round.o
-	@echo -e "[`tput bold``tput bold``tput setaf 6`$@`tput sgr0`] $(CXX) -o `tput bold`$@`tput sgr0`" \
-		" -c `tput setaf 2`$^`tput sgr0` $(INCPATH)" # $(CXXFLAGS)"
-	@$(CXX) $^ -o $@ $(CXXFLAGS)
-
-# Explicit rule to make ROOT analasys routine module
-$(FIT).o: $(FIT).cpp
-	@echo -e "[`tput setaf 4`module`tput sgr0`] $(CXX) -o `tput bold`$@`tput sgr0`" \
-		"-c `tput setaf 2`$<`tput sgr0` $(INCPATH) $(ROOT)" # $(CXXFLAGS)"
-	@$(CXX) -c $< -o $@ $(CXXFLAGS) $(ROOT)
-
-# ROOT analysis routine
-$(FIT): %: %.o round.o
-	@echo -e "[`tput bold``tput setaf 6`$@`tput sgr0`] $(CXX) -c `tput setaf 2`$^`tput sgr0` -o `tput bold`$@`tput sgr0` $(ROOT) $(CXXFLAGS)"
-	@$(CXX) $^ -o $@ $(CXXFLAGS) $(ROOT)
-
 # Miscellanea
 $(MISC): %: %.o
 	@echo -e "[`tput bold``tput setaf 6`$@`tput sgr0`] $(CXX) -c `tput setaf 2`$^`tput sgr0` -o `tput bold`$@`tput sgr0` $(CXXFLAGS)"
 	@$(CXX) $^ -o $@ $(CXXFLAGS)
-
-cut: cut.o round.o
-	$(CXX) $^ -o $@ $(CXXFLAGS)
 
 date = $(strip $(shell date "+%Y.%m.%d" ) )
 dist: distclean
