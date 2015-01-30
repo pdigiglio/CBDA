@@ -39,20 +39,20 @@
 
 using namespace std;
 
-const unsigned int tries = 100000;
+const unsigned int tries = 10000;
 
 const double xMin = 1.;
 const double xMax = 3.;
 const unsigned int bins = 10;
 
-const double binWidth = ( xMax - xMin ) / bins;
+const double binWidth = (double) ( xMax - xMin ) / bins;
 
 const double mean  = 2.;
 const double sigma = .5;
 const double norm  = 10000.;
 
-double parInt[3] = { 0., mean, sigma };
-double parApp[3] = { 0., mean, sigma };
+double par[3] = { norm * binWidth, mean, sigma };
+//double parApp[3] = { norm * binWidth, mean, sigma };
 
 	int
 least_square_counting_experiment () {
@@ -64,19 +64,19 @@ least_square_counting_experiment () {
 	/* Set function parameters */
 	gaussFunc->SetParameters( norm, mean, sigma );
 	
-	/**
+	/* NO
 	 * Evaluate explicitly the expected area of the histograms since  the normalization
 	 * _is not_ the area because the normalization is referred to the whole real axis.
 	 */
-	for ( unsigned int b = 0; b < bins; ++ b ) {
-		parInt[0] += gaussFunc->Integral( xMin + b * binWidth, xMin + ( b + 1 ) * binWidth );
-		parApp[0] += binWidth * gaussFunc->Eval( xMin + ( b + .5 ) * binWidth );
-	}
-
-	/* normalize areas */
-	parApp[0] *= binWidth;
-	parInt[0] *= binWidth;
-	cout << "Estimated areas: " << parInt[0] << " (int) and " << parApp[0] << " (approx)" << endl;
+//	for ( unsigned int b = 0; b < bins; ++ b ) {
+//		parInt[0] += gaussFunc->Integral( xMin + b * binWidth, xMin + ( b + 1 ) * binWidth );
+//		parApp[0] += binWidth * gaussFunc->Eval( xMin + ( b + .5 ) * binWidth );
+//	}
+//
+//	/* normalize areas */
+//	parApp[0] *= binWidth;
+//	parInt[0] *= binWidth;
+//	cout << "Estimated areas: " << parInt[0] << " (int) and " << parApp[0] << " (approx)" << endl;
 //	cout << gaussFunc->Integral( xMin, xMax) << endl;
 	
 //	gaussFunc->Draw();
@@ -118,7 +118,7 @@ least_square_counting_experiment () {
 			 *     \int_{x_\textup{min bin}}^{x_\textup{max bin}}g(x;\mu,\sigma)\,\mathrm{d}x.
 			 * \f]
 			 */
-			count = gRandom->Poisson( gaussFunc->Integral( xMin + b * binWidth, xMin + ( b + 1 ) * binWidth ) );
+			count = gRandom->Poisson( gaussFunc->Integral( xMin + b * binWidth, xMin + ( b + 1 ) * binWidth) );
 			histoIntegral->SetBinContent( b + 1, count );
 			histoIntegral->SetBinError( b + 1, TMath::Sqrt( count ) );
 
@@ -144,46 +144,68 @@ least_square_counting_experiment () {
 		 * is \f$N_\textup{entries}(x_\textup{max}-x_\textup{min}) / N_\textup{bins} = 2000\f$.
 		 */
 //		histoIntegral->Draw();
-		histoIntegral->Fit( "gausn", "Q0" );
-		
-		dummy = histoIntegral->GetFunction( "gausn" );
-		for ( unsigned short int m = 0; m < 3; ++ m ) {
-			histoInt[m]->Fill( ( dummy->GetParameter( m ) - parInt[m] ) / dummy->GetParError( m ) );
-		}
-//		cout << ( dummy->GetParameter( 1 ) - mean ) / dummy->GetParError( 1 ) << endl;
-		
 
+		/**
+		 * Here I fit my integral with the option
+		 *     1. "Q" = don't print fit parameters on screen;
+		 *     2. "I" = use the integral of the (fitting) function over the bin instead of the 
+		 *     function ad the bin center
+		 *     3. "0" = don't draw a plot containing the function after the fit
+		 *
+		 * @attention This fit will be _wrong_ without the "I" option!
+		 */
+		histoIntegral->Fit( "gausn", "QI0" );
+		
+//		dummy = histoIntegral->GetFunction( "gausn" );
+//		for ( unsigned short int m = 0; m < 3; ++ m ) {
+//			histoInt[m]->Fill( ( dummy->GetParameter( m ) - par[m] ) / dummy->GetParError( m ) );
+////			cout << ( dummy->GetParameter( m ) - par[m] ) / dummy->GetParError( 1 ) << endl;
+//
+//		}
+
+		dummy = histoIntegral->GetFunction( "gausn" );
+		histoInt[2]->Fill( ( dummy->GetParameter( 2 ) - par[2] ) / dummy->GetParError( 2 ) );
+		cout << dummy->GetParameter( 2 )  << " " << par[2] << endl;
+
+//			cout << ( dummy->GetParameter( m ) - par[m] ) / dummy->GetParError( 1 ) << endl;
+
+//
 //		TCanvas *canvApprox = new TCanvas( "appr", "approximate" );
 //		histo->Draw();
-		histo->Fit( "gausn","Q0" );
+//		histo->Fit( "gausn","+Q0" );
 
-		dummy = histo->GetFunction( "gausn" );
-		for ( unsigned short int m = 0; m < 3; ++ m ) {
-			histoApp[m]->Fill( ( dummy->GetParameter( m ) - parApp[m] ) / dummy->GetParError( m ) );
-		}
-
-		/* delete the histograms to avoid memory leacks */
-		delete histoIntegral;
-		delete histo;
+//
+//		dummy = histo->GetFunction( "gausn" );
+//		for ( unsigned short int m = 0; m < 3; ++ m ) {
+//			histoApp[m]->Fill( ( dummy->GetParameter( m ) - par[m] ) / dummy->GetParError( m ) );
+//		}
+//
+//		/* delete the histograms to avoid memory leacks */
+//		delete histoIntegral;
+//		delete histo;
 	}
 
-	new TCanvas();
-	histoInt[0]->Draw();
-	histoInt[0]->Fit( "gausn", "Q" );
-	cout << "HistoIntegral normalization: "
-		 << histoInt[0]->GetFunction( "gausn" )->GetParameter(1)
-		 << " +/- "
-		 << histoInt[0]->GetFunction( "gausn" )->GetParError(1)
-		 << endl;
-	
-	new TCanvas();
-	histoInt[1]->Draw();
-	histoInt[1]->Fit( "gausn", "Q" );
-	cout << "HistoIntegral mean: "
-		 << histoInt[1]->GetFunction( "gausn" )->GetParameter(1)
-		 << " +/- "
-		 << histoInt[1]->GetFunction( "gausn" )->GetParError(1)
-		 << endl;
+		histoIntegral->Draw();
+		TCanvas *canvApprox = new TCanvas( "appr", "approximate" );
+		histo->Draw();
+
+//	new TCanvas();
+//	histoInt[0]->Draw();
+//	histoInt[0]->Fit( "gausn", "Q" );
+//	cout << "HistoIntegral normalization: "
+//		 << histoInt[0]->GetFunction( "gausn" )->GetParameter(1)
+//		 << " +/- "
+//		 << histoInt[0]->GetFunction( "gausn" )->GetParError(1)
+//		 << endl;
+//	
+//	new TCanvas();
+//	histoInt[1]->Draw();
+//	histoInt[1]->Fit( "gausn", "Q" );
+//	cout << "HistoIntegral mean: "
+//		 << histoInt[1]->GetFunction( "gausn" )->GetParameter(1)
+//		 << " +/- "
+//		 << histoInt[1]->GetFunction( "gausn" )->GetParError(1)
+//		 << endl;
 	
 	new TCanvas();
 	histoInt[2]->Draw();
@@ -193,33 +215,33 @@ least_square_counting_experiment () {
 		 << " +/- "
 		 << histoInt[2]->GetFunction( "gausn" )->GetParError(1)
 		 << endl;
-
-	new TCanvas();
-	histoApp[0]->Draw();
-	histoApp[0]->Fit( "gausn", "Q" );
-	cout << "HistoIntegral normalization: "
-		 << histoApp[0]->GetFunction( "gausn" )->GetParameter(1)
-		 << " +/- "
-		 << histoApp[0]->GetFunction( "gausn" )->GetParError(1)
-		 << endl;
-	
-	new TCanvas();
-	histoApp[1]->Draw();
-	histoApp[1]->Fit( "gausn", "Q" );
-	cout << "HistoIntegral mean: "
-		 << histoApp[1]->GetFunction( "gausn" )->GetParameter(1)
-		 << " +/- "
-		 << histoApp[1]->GetFunction( "gausn" )->GetParError(1)
-		 << endl;
-	
-	new TCanvas();
-	histoApp[2]->Draw();
-	histoApp[2]->Fit( "gausn", "Q" );
-	cout << "HistoIntegral sigma: "
-		 << histoApp[2]->GetFunction( "gausn" )->GetParameter(1)
-		 << " +/- "
-		 << histoApp[2]->GetFunction( "gausn" )->GetParError(1)
-		 << endl;
+//
+//	new TCanvas();
+//	histoApp[0]->Draw();
+//	histoApp[0]->Fit( "gausn", "Q" );
+//	cout << "HistoIntegral normalization: "
+//		 << histoApp[0]->GetFunction( "gausn" )->GetParameter(1)
+//		 << " +/- "
+//		 << histoApp[0]->GetFunction( "gausn" )->GetParError(1)
+//		 << endl;
+//	
+//	new TCanvas();
+//	histoApp[1]->Draw();
+//	histoApp[1]->Fit( "gausn", "Q" );
+//	cout << "HistoIntegral mean: "
+//		 << histoApp[1]->GetFunction( "gausn" )->GetParameter(1)
+//		 << " +/- "
+//		 << histoApp[1]->GetFunction( "gausn" )->GetParError(1)
+//		 << endl;
+//	
+//	new TCanvas();
+//	histoApp[2]->Draw();
+//	histoApp[2]->Fit( "gausn", "Q" );
+//	cout << "HistoIntegral sigma: "
+//		 << histoApp[2]->GetFunction( "gausn" )->GetParameter(1)
+//		 << " +/- "
+//		 << histoApp[2]->GetFunction( "gausn" )->GetParError(1)
+//		 << endl;
 
 	cout << " >> Execution time " << (double) (  clock() - start )/ CLOCKS_PER_SEC << endl;
 	return 0;
