@@ -51,7 +51,7 @@ change ( unsigned short int win ) {
  *  			  funtion since without loss of generality, takes win = 0.
  * =====================================================================================
  */
-bool
+	inline bool
 no_change ( void ) {
 	// select a choice
 //	if ( gRandom->Integer(N) == 0 )
@@ -60,7 +60,7 @@ no_change ( void ) {
 	return ( gRandom->Integer( N ) == 0 );
 }
 
-bool
+	inline bool
 change ( void ) {
 	// if you select the wrong door at the beginning, you win
 //	if( 0 != gRandom->Integer( N ) )
