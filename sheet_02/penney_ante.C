@@ -1,20 +1,10 @@
-/*
- * =====================================================================================
+/**
+ * @file penney_ante.C
+ * @brief
  *
- *       Filename:  penney_ante.C
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  11/01/2014 10:53:58 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  P. Di Giglio (github.com/pdigiglio), p.digiglio91@gmail.com
- *        Company:  
- *
- * =====================================================================================
+ * @author P. Di Giglio (github.com/pdigiglio), p.digiglio91@gmail.com
  */
+
 
 
 #include <iostream>
@@ -24,33 +14,53 @@
 
 using namespace std;
 
+/**
+ * @brief Convert a character in a string containing its bit sequence
+ *
+ * @param x the `unsigned char` to be converted into a string
+ */
 	std::string
 getBits ( unsigned char x ) {
 
-	std::string output;
-	for( short int i = ( sizeof( unsigned char ) * 8 ) - 1; i >= 0; -- i )
+	/* empty string */
+	std::string output = "\0";
+
+	for( short int i = sizeof( x ) * 8 - 1; i >= 0; -- i ) {
+		/**
+		 * Chech if the \f$(i+1)\f$-th bit of the character is 1 or 0 and append it to
+		 * the output string
+		 */
 		( x & ( 1 << i ) ) ? output.append("1") : output.append("0");
+	}
+
 	return output;
 }		/* -----  end of function getbits  ----- */
 
+/**
+ * @brief Print to the `stdout` the bitwise representation of one `unsigned char`
+ */
 	void
 showbits( unsigned char x ) {
 	std::cout << getBits( x ) << std::endl;
+
 //	for( short int i = ( sizeof( unsigned char ) * 8 ) - 1; i >= 0; -- i )
 //		( x & ( 1 << i ) ) ? putchar('1') : putchar('0');
 //
 //	printf("\n");
+
 }	/* -----  end of function showbits  ----- */
 
-
-/* 
- * ===  FUNCTION  ======================================================================
- *         Name:  newSequence
- *  Description:  find the new sequence from the one given as argument
- * =====================================================================================
+/**
+ * @brief Find the new sequence from the one given as argument.
+ *
+ * The argument is treated as a sequence of 3 bits \f$(c_1,c_2,c_3)\f$ and a new sequence
+ * is generated from that.
+ *
+ * @returns an `unsigned char` containing the sequence \f$(\bar{c}_2,c_1,c_2)\f$ 
  */
 	unsigned char
 newSequence ( unsigned char oldSeq ) {
+
 	// (0,..., 0, 0, c2, c1 )
 	unsigned char newSeq = oldSeq & 3;
 	// (0,..., 0, c2, c1, 0 )
@@ -133,5 +143,11 @@ penney_ante ( void ) {
 	histo->Draw();
 	notHisto->Draw("same");
 
+	/**
+	 * @par
+	 * From the output it can be seen that this problem is symmetric under flip of bits,
+	 * namely a given sequence \f$(c_1,c_2,c_3)\f$ and its _not_-sequence
+	 * \f$(\bar{c}_1,\bar{c}_2,\bar{c}_3)\f$ have the same winning probability!
+	 */
 	return 0;
 }		/* -----  end of function penny_ante  ----- */
