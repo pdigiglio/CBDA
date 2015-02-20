@@ -6,7 +6,7 @@
  *         	errors.
  *
  *         	In the script three PDFs are defined, namely a Gaussian, a Laplacian and a
- *         	uniform distribution. Then a simple linear function \f$y=f(x) = mx+q\f$$ is
+ *         	uniform distribution. Then a simple linear function \f$y=f(x) = mx+q\f$ is
  *         	taken and random numbers around the expected value \f$f(x_i)\f$ are generated
  *         	with one of the previous distributions.
  *
@@ -45,15 +45,38 @@
 using namespace TMath;
 using namespace std;
 
+/** @brief Lower bound for distribution plots */
 const double yMin = -2.;
+/** @brief Upper bound for distribution plots */
 const double yMax = +2.;
 
-const unsigned int numTries = 100000;
+/** @brief Number of times data are generated */
+const unsigned int numTries = 500000;
 
 /**
- * @brief uniform distribution
+ * @brief Uniform distribution in the interval \f$(a,b)\f$.
  *
- * \f$1/(b-a)\f$
+ * @param p[0] \f$a\f$ the lower bound of the interval
+ * @param p[1] \f$b\f$ the upper bound of the interval
+ * @param x[0] the point where to evaluate the distribution
+ *
+ * @return
+ * 	* `0.` if `x[0]` doesn't lie between `p[0]` and `p[1]`;
+ * 	* `1./(p[1]-p[0])` otherwise.
+ *
+ * @attention to save some CPU clock, I don't return the absolute value
+ * of the previous quantity so pay attention and insert the parameter in the right order
+ * otherwise you'll get a negative PDF.
+ */
+/*
+ * \f[
+ * f(x) = \begin{cases}
+ * 	1/(b-a) 	%& % <-- allignment doesn't work with doxygen
+ * 	\text{if }x\in(a,b),\\
+ * 	0			%& % <--    ""        ""     ""   ""    ""
+ * 	\text{ otherwise}
+ * 	\end{cases}
+ * \f]
  */
 	double
 uniformDistribution( double *x, double *p ) {
@@ -65,6 +88,11 @@ uniformDistribution( double *x, double *p ) {
 	return 0.;
 }
 
+/**
+ * @brief Evaluate \f$\chi^2(x)\f$ given mean and error.
+ *
+ * I will _not_ use it into the script.
+ */
 	double
 evaluateChiSquare( double x, double mean, double error ) {
 	return ( x - mean ) * ( x - mean ) / ( error * error );
@@ -76,7 +104,7 @@ evaluateChiSquare( double x, double mean, double error ) {
  * @param x array of random variables (only `x[0]` is needed)
  * @param p array of parameters (only `p[0]` = num. dof is used)
  *
- * @return \f[\frac{(\chi^2\!/n)^{n/2 - 1}e^{-\chi^2\!/2n}}{n\,2^{n/2}\Gamma(n/2)}\f]
+ * @return \f[f_{\chi^2\!/n}(\chi^2\!/n;n) = \frac{(\chi^2\!/n)^{n/2 - 1}\mathrm{e}^{-\chi^2\!/2n}}{n\,2^{n/2}\Gamma(n/2)}\f]
  */
 	double
 reducedChiSquarePDF( double *x, double *p ) {
@@ -132,7 +160,7 @@ least_square_fit_non_gaussian() {
 
 
 	TH1D *chiSquareHisto = new TH1D( "chiSquare", "Reduced #chi^{2};#chi^{2};frequency", 100, 0, 4 );
-	TH1D *chiSquareProbHisto = new TH1D( "chiSquareProb", "#chi^{2}-probability;Prob( #chi^{2} > #chi^{2}_{obs} );frequency", 100, 0, 1. );
+	TH1D *chiSquareProbHisto = new TH1D( "chiSquareProb", "#chi^{2}-probability;Prob( #chi^{2} > #chi^{2}_{obs} );frequency", 200, 0, 1. );
 	TF1 *fit = nullptr;
 	for ( unsigned int t = 0; t < numTries; ++ t ) {
 		for ( unsigned int n = 0; n < numPoints; ++ n ) {
@@ -151,7 +179,7 @@ least_square_fit_non_gaussian() {
 
 
 			/** Generate a random number */
-			y[n] = m * x[n] + q + uniform->GetRandom();
+			y[n] = m * x[n] + q + gauss->GetRandom();
 
 			/**
 			 * Distributions are always such that their standard deviation is \f$0,5\f$.
@@ -183,6 +211,10 @@ least_square_fit_non_gaussian() {
 	new TCanvas();
 	chiSquareProbHisto->Scale( 1. / chiSquareProbHisto->Integral(), "WIDTH" );
 	chiSquareProbHisto->Draw();
+
+	for ( unsigned int j = 1; j < 201; ++ j ) {
+		cout << chiSquareProbHisto->GetBinCenter(j) << "\t" << chiSquareProbHisto->GetBinContent(j) << endl;
+	}
 
 	cout << "Execution time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << endl;
 	return 0;
