@@ -33,6 +33,23 @@
 using namespace TMath;
 using namespace std;
 
+const double mean = 5.;       /*! Fix the mean of kinetic energy to \f$5\,\textup{MeV}\f$. */
+const double sigma = 1.;      /*! Fix the std. deviation of kinetic energy to \f$1\,\textup{MeV}\f$. */
+const double threshold = 9.2; /*! Fix the threshold of kinetic energy to \f$9.2\,\textup{MeV}\f$. */
+
+// array of parameters to pass to myGauss
+const double pars[] = { mean, sigma };
+
+
+/**
+ * @brief User-defined Gaussian function.
+ *
+ * @param x[0] point where the function is evaluated
+ * @param p[0] mean
+ * @param p[1] standard deviation
+ *
+ * @return \f$\mathrm{e}^{-(x-p_0)^2\!/2p_1^2} / \sqrt{2\pi}\,p_1 \f$.
+ */
 	double
 myGauss ( double *x, double *p ) {
 	return Exp( - ( x[0] - p[0] ) * ( x[0] - p[0] ) / ( 2 * p[1] * p[1] ) ) / ( Sqrt( 2 * Pi() ) * p[1] ); 
@@ -42,18 +59,22 @@ myGauss ( double *x, double *p ) {
 //main ( void ) {
 radioactive_decay ( void ) {
 
-	/// Initialize the seed for the random generator (the default argument is `0`).
+	/**
+	 * @par
+	 * Initialize the seed for the random generator (the default argument is `0`).
+	 */
 	gRandom->SetSeed();
 
-	const double mean = 5.;       /*! Fix the mean of kinetic energy to \f$5\,\textup{MeV}\f$. */
-	const double sigma = 1.;      /*! Fix the std. deviation of kinetic energy to \f$1\,\textup{MeV}\f$. */
-	const double threshold = 9.2; /*! Fix the threshold of kinetic energy to \f$9.2\,\textup{MeV}\f$. */
 	const unsigned short int efficiency = 6;
 
-	// array of parameters to pass to myGauss
-	const double pars[] = { mean, sigma };
-
-	/// Declare a `TF1` function containing `myGauss` function.
+	/**
+	 * @par
+	 * _TH1 object to handle functions_.
+	 *
+	 *
+	 * Define two `TF1` object to handle `myGauss( double *x, double *p )` and 
+	 * the built-in math function `TMath::Gaus()`.
+	 */
 	TF1 *myFunc = new TF1(
 			"MG",         /* name */
 			myGauss,      /* what function to call */
@@ -61,17 +82,22 @@ radioactive_decay ( void ) {
 			Infinity(),   /* maximum value (to) */
 			2 );          /* parameters number */
 
-	/// Declare a `TF1` function containing the built-in `TMath::Gaus()` function.
 	TF1 *Func = new TF1( "G", "TMath::Gaus(x, 5, 1, 1)", - Infinity(), Infinity());
 
-	/// To get the probability of a decay per second I evaluate
-	/// \f[
-	/// \int_{9.2}^\infty \frac{\mathrm{e}^{(x-5)^2\!/2}}{\sqrt{2\pi}\,\sigma} \,\mathrm{d}x 
-	/// \f]
-	/// using both my function `myFunc` and `Func`.
-	/// Actually ROOT doesn't seem to be able to handle \f$(\pm\infty)\f$-limits for 
-	/// integrals so I evaluate the integral from \f$9.2\,\f$MeV to some upper limit 
-	/// \f$E_0\f$ such that \f$(5 - E_0)/\sigma \gg 1\f$, for example \f$E_0 = 30\f$.
+	/**
+	 * @par
+	 * _Probability of decay per second_.
+	 *
+	 * It's given by the integral
+	 * \f[
+	 * \int_{9.2}^\infty \frac{\mathrm{e}^{-(x-5)^2\!/2}}{\sqrt{2\pi}\,\sigma} \,\mathrm{d}x.
+	 * \f]
+	 * I evaluate it using both my function `myFunc()` (i.e. `myGauss()`) and `Func()` (i.e. `TMath::Gaus()`).
+	 *
+	 * Actually ROOT doesn't seem to be able to handle \f$(\pm\infty)\f$-limits for 
+	 * integrals so I evaluate the integral from \f$9.2\,\f$MeV to some upper limit 
+	 * \f$E_0\f$ such that \f$(5 - E_0)/\sigma \gg 1\f$, for example \f$E_0 = 30\f$.
+	 */
 	cerr << "Decay probability per second (using myGauss): "
 		<< myFunc->Integral( threshold, 30, pars ) << endl;
 	cerr << "Decay probability per second (using TMath::Gaus): "
@@ -107,23 +133,33 @@ radioactive_decay ( void ) {
 				-- nuclei;
 		}
 
-		/// After one step, I get the number of nuclei from the `ncl` histogram,
-		/// substract the current number of nuclei and fill `decay` histogram
-		/// with this value.
+		/** 
+		 * After one step, I get the number of nuclei from the `ncl` histogram,
+		 * substract the current number of nuclei and fill `decay` histogram
+		 * with this value.
+		 */
 		decay->Fill( ncl->GetBinContent( t ) - nuclei );
 
-		/// The error for the nuclei number is initially set to zero. Then I use the
-		/// propagation of the error using the formula \f$\sqrt{\delta x^2 + \delta y ^ 2}\f$.
-		/// Since che number of nuclei \f$n_j\f$ at the \f$j\f$-th step is \f$n_{j-1} - d_j\f$, where
-		/// \f$d_j\f$ is the number of decays at the step \f$j\f$, I can evaluate recursively the 
-		/// error as \f$\delta n_j^2 = \delta n_{j-1}^2 - \delta d_j^2\f$.
-		/// Since the decays are poisson distribuited, \f$\delta d_j^2 = d_j\f$.
+		/**
+		 * @par
+		 * _Error on nuclei number_.
+		 *
+		 *
+		 * The error for the nuclei number is initially set to zero since I know how many there are.
+		 * Then I use the propagation of the error using the formula \f$\sqrt{\delta x^2 + \delta y ^ 2}\f$.
+		 * Since che number of nuclei \f$n_j\f$ at the \f$j\f$-th step is \f$n_{j-1} - d_j\f$, where
+		 * \f$d_j\f$ is the number of decays at the step \f$j\f$, I can evaluate recursively the 
+		 * error as \f$\delta n_j^2 = \delta n_{j-1}^2 - \delta d_j^2\f$.
+		 * From the fact that the decays are poisson distribuited, \f$\delta d_j^2 = d_j\f$.
+		 */
 		nuclei_err *= nuclei_err;
 		nuclei_err += (double) ( ncl->GetBinContent( t ) - nuclei );
 		nuclei_err = sqrt( nuclei_err );
 
-		/// Modelize the detector which detects \f$60\,\f$\% of the alpha-particle emitted.
-		/// The number of decayd nuclei equals the number of \f$\alpha\f$-particles.
+		/**
+		 * Modelize the detector which detects \f$60\,\f$\% of the alpha-particle emitted.
+		 * The number of decayed nuclei equals the number of \f$\alpha\f$-particles.
+		 */
 		unsigned int detected = 0;
 		for ( unsigned int j = 0; j < ncl->GetBinContent( t ) - nuclei; ++ j ) {
 			if( gRandom->Integer(10) < efficiency )
