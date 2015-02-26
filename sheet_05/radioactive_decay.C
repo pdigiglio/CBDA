@@ -119,6 +119,7 @@ radioactive_decay ( void ) {
 
 	double nuclei_err = 0;
 	register unsigned int n;
+	unsigned int detected;
 	// start cycling over time
 	for ( unsigned int t = 1; t <= time; ++ t ) {
 //		cerr << t << endl;
@@ -127,10 +128,20 @@ radioactive_decay ( void ) {
 		/// Fill the histogram `ncl` with the current value of `nuclei` counter.
 		ncl->SetBinContent( t, nuclei );
 
+		detected = 0;
 		for ( n = nuclei; n > 0; -- n ) {
+
 			/// If the random value exceeds the threshold decrease the number of nuclei.
-			if( gRandom->Gaus( mean, sigma ) > threshold )
+			if( gRandom->Gaus( mean, sigma ) > threshold ) {
 				-- nuclei;
+
+				/**
+				 * Modelize the detector which detects \f$60\,\f$\% of the alpha-particle emitted.
+				 * The number of decayed nuclei equals the number of \f$\alpha\f$-particles.
+				 */
+				if( gRandom->Integer(10) < efficiency )
+					++ detected;
+			}
 		}
 
 		/** 
@@ -139,6 +150,7 @@ radioactive_decay ( void ) {
 		 * with this value.
 		 */
 		decay->Fill( ncl->GetBinContent( t ) - nuclei );
+		dtc->Fill( detected );
 
 		/**
 		 * @par
@@ -152,22 +164,21 @@ radioactive_decay ( void ) {
 		 * error as \f$\delta n_j^2 = \delta n_{j-1}^2 - \delta d_j^2\f$.
 		 * From the fact that the decays are poisson distribuited, \f$\delta d_j^2 = d_j\f$.
 		 */
-		nuclei_err *= nuclei_err;
-		nuclei_err += (double) ( ncl->GetBinContent( t ) - nuclei );
-		nuclei_err = sqrt( nuclei_err );
-
-		/**
-		 * Modelize the detector which detects \f$60\,\f$\% of the alpha-particle emitted.
-		 * The number of decayed nuclei equals the number of \f$\alpha\f$-particles.
-		 */
-		unsigned int detected = 0;
-		for ( unsigned int j = 0; j < ncl->GetBinContent( t ) - nuclei; ++ j ) {
-			if( gRandom->Integer(10) < efficiency )
-			++ detected;
-		}
-
-		dtc->Fill( detected );
+//		nuclei_err *= nuclei_err;
+//		nuclei_err += (double) ( ncl->GetBinContent( t ) - nuclei );
+//		nuclei_err = sqrt( nuclei_err );
+//
+//		ncl->SetBinError( t, nuclei_err );
 	}
+
+	/**
+	 * @par
+	 * _Nuclei counting_.
+	 *
+	 * The time while I am collecting data is short. I expect an exponentially decreasing
+	 * function for the number of nuclei but I will just observe a straight line. That's
+	 * because \f$\mathrm{e}^{-x} \approx 1 - x \f$.
+	 */
 
 	ncl->Draw();
 
@@ -176,6 +187,7 @@ radioactive_decay ( void ) {
 
 	// create new TCanvas for the new plot
 	new TCanvas();
+
 
 	decay->Fit( fit );
 	// draw errors
