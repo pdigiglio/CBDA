@@ -30,10 +30,10 @@ myBinom ( double *x, double *par ) {
 }
 
 /** @brief detector efficiency. */
-const double p = .989;
+const double p = .5;//.989;
 const double recur = 1. / p - 1.;
 /** @brief Select a power of 2 */
-const unsigned short int twoPow = 12;
+const unsigned short int twoPow = 14;
 const unsigned int n = TMath::Power( 2, twoPow );
 
 	void
@@ -60,7 +60,7 @@ particle_detection () {
 	long double binom = p; //TMath::Power( p, (double) n );
 	for ( unsigned int tp = 0; tp < twoPow; ++tp ) {
 		binom *= binom;
-		std::cout << binom << std::endl;
+//		std::cout << binom << std::endl;
 	}
 //	std::cout << TMath::Power( p, (double) n ) << std::endl;
 
@@ -112,10 +112,43 @@ particle_detection () {
 	do {
 		// fill the histogram (indexes of histograms start from 1)
 		pHist->Fill( j + 1, TMath::PoissonI( lambda, j ++ ) /*poisson*/ );
-        std::cout << TMath::PoissonI( lambda, j ++ ) << std::endl;
+//        std::cout << TMath::PoissonI( lambda, j ++ ) << std::endl;
 //		poisson *= lambda / ((long double) ( ++ j ));
 	} while ( j < 2 * n );
 
 	pHist->Draw( "same" );
+
+	/**
+	 * @par
+	 * _Gaussians_.
+	 *
+	 * At the end of the program I plot two Gaussian distributions. For the first one I 
+	 * set its mean to \f$\lambda = np\f$ and its std. dev to \f$\sigma = \sqrt{np}\f$.
+	 * It will approximate the Poisson distribution.
+	 *
+	 *
+	 * For the second one the mean is \f$np\f$ as well but \f$\sigma^2 = np(1-p)\f$. From
+	 * this we see that the more \f$p\to0\f$, the more the Binomial and Poisson distributions
+	 * look like each other. That's why in this case (with \f$p=0.989\f$) they are always
+	 * very different.
+	 */
+	TF1 *gaus1 = new TF1( "gaus", "TMath::Gaus(x,[0],[1],[2])",
+			-.5 + n * p - 3 * (int) TMath::Sqrt( n * p ),
+			.5 + n * p + 3 * (int) TMath::Sqrt( n * p ) );
+
+	gaus1->SetParameter( 0, n*p );
+	gaus1->SetParameter( 1, TMath::Sqrt(n*p) );
+	gaus1->SetParameter( 2, 1 );
+	
+	TF1 *gaus2 = new TF1( "gaus", "TMath::Gaus(x,[0],[1],[2])",
+			-.5 + n * p - 3 * (int) TMath::Sqrt( n * p ),
+			.5 + n * p + 3 * (int) TMath::Sqrt( n * p ) );
+
+	gaus2->SetParameter( 0, n*p );
+	gaus2->SetParameter( 1, TMath::Sqrt( n*p *( 1 - p ) ) );
+	gaus2->SetParameter( 2, 1 );
+
+	gaus1->Draw("same");
+	gaus2->Draw("same");
 
 }
