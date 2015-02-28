@@ -1,15 +1,15 @@
 /**
  *
  *
- *           @file  letal_horse.C
- *          @brief  Distribution of letal horse accident of the Prussian Army.
+ *           @file  lethal_horse.C
+ *          @brief  Distribution of lethal horse accident of the Prussian Army.
  *
  * 			These values are Poisson distribuite and the aim of this ROOT script is to 
  * 			proove it.
  *
  *          Example usage:
  *          @code
- *          	root -l letal_horse.C+
+ *          	root -l lethal_horse.C+
  *          @endcode
  *
  *        @version  1.0
@@ -31,7 +31,7 @@
 using namespace TMath;
 
 void
-letal_horse ( void ) {
+lethal_horse ( void ) {
 	/// Use an array to store the occurrence of the number of deaths. The index of the
 	/// array represents the number of deaths i.e. 109 years per corp with 0 deaths
 	/// has been registered.
