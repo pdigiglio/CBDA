@@ -15,3 +15,6 @@
 # ignore built documentation
 latex/
 html/
+
+# ignore ROOT tree files
+*.root
