@@ -47,7 +47,7 @@ my2DGaussImp( double *x, double *p ) {
 //	expoY *= expoY;
 
 	// return the value
-	return Exp( - .5 *( expoX * expoX + expoY * expoY ) )/ ( Pi() * p[1] * p[3] );
+	return Exp( - .5 *( expoX * expoX + expoY * expoY ) )/ ( 2 * Pi() * p[1] * p[3] );
 }
 
 /// @brief 2-dimensional rotated Gaussian function
@@ -113,8 +113,8 @@ my2DGaussRotSpeedUp( double *x, double *p ) {
 
 
 	int
-main ( void ) {
-//error_ellipse ( void ) {
+//main ( void ) {
+error_ellipse ( void ) {
 
 	time_t start = clock();
 
