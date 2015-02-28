@@ -113,6 +113,7 @@ multivariate_distribution ( TString inTree = "multivariateDistrData.root" ) {
 				// evaluate covariance
 				cov += ( events[i] - mean[i] ) * ( events[j] - mean[j] );
 				cov1 += events[i] * events[j];
+
 				// this should be the true value because I know the cross product must
 				// vanish in the average
 				cov2 += events[i] * events[j] - mean[i] * mean[j];
@@ -129,7 +130,7 @@ multivariate_distribution ( TString inTree = "multivariateDistrData.root" ) {
 			cov  = 0.;
 			cov1 = 0.;
 			cov2 = 0.;
-			delete dummy;
+//			delete dummy;
 		}
 
 		cout << endl << endl;
