@@ -21,25 +21,43 @@
 
 #include "TF1.h"
 
-/// @brief The efficiency for a 3-layers detector as a function of the probability.
-///
-/// The efficiency in this case is just \f$P(3;3,p) = p^3\f$.
+/**
+ * @brief The efficiency for a 3-layers detector as a function of the probability.
+ *
+ * The efficiency in this case is just \f$P(3;3,p) = p^3\f$.
+ *
+ * @param x[0] probability \f$0\le p\le 1\f$
+ *
+ * @return \f$p^3\f$.
+ */
 	double
 threeLayersEfficiency( const double *x, const double *p ) {
 	return x[0] * x[0] * x[0];
 }
 
-/// @brief The efficiency for a 4-layers detector as a function of the probability.
-///
-/// The efficiency in this case is \f$P(3;4,p) + P(4;4,p) = p^3(4-3p)\f$.
+/**
+ * @brief The efficiency for a 4-layers detector as a function of the probability.
+ *
+ * The efficiency in this case is \f$P(3;4,p) + P(4;4,p) = p^3(4-3p)\f$.
+ *
+ * @param x[0] probability \f$0\le p\le 1\f$
+ *
+ * @return \f$p^3(4-3p)\f$.
+ */
 	double
 fourLayersEfficiency( const double *x, const double *p ) {
 	return x[0] * x[0] * x[0] * ( 4. - 3. * x[0] );
 }
 
-/// @brief The efficiency for a 5-layers detector as a function of the probability.
-///
-/// The efficiency in this case is\f$P(3;5,p) + P(4;5,p) + P(5;5,p) = p^3(10-15p+6p^2)\f$.
+/**
+ * @brief The efficiency for a 5-layers detector as a function of the probability
+ *
+ * The efficiency in this case is\f$P(3;5,p) + P(4;5,p) + P(5;5,p) = p^3(10-15p+6p^2)\f$.
+ *
+ * @param x[0] probability \f$0\le p\le 1\f$
+ *
+ * @return \f$p^3(10-15p+6p^2)\f$.
+ */
 	double
 fiveLayersEfficiency( const double *x, const double *p ) {
 	return x[0] * x[0] * x[0] * ( 10. + 6. * x[0] * x[0] - 15. * x[0] );
