@@ -33,16 +33,16 @@
 
 using namespace TMath;
 
-const unsigned int N = 300000;
+const unsigned int N = 100000;
 
 
 const unsigned int lambda = 10000;
 const double inv_lambda = 1. / lambda;
 
 /**
- * @brief probability of reaction
+ * @brief Probability of reaction.
  *
- * out of a sample of \f$10^6\f$ trials, we expect \f$\lambda = 10^4\f$ countings so
+ * Out of a sample of \f$10^6\f$ trials, we expect \f$\lambda = 10^4\f$ countings so
  * \f$\delta p = 10^{-2}\f$
  */
 const double p = (double) N * inv_lambda;
@@ -50,9 +50,7 @@ const double p = (double) N * inv_lambda;
 const double st_dev = Sqrt( lambda );
 
 
-/**
- * @brief The number of dof when I generalize to dof > 1
- */
+/** @brief The number of dof when I generalize to dof > 1. */
 const unsigned short int dof = 200;
 
 
@@ -60,7 +58,8 @@ const unsigned short int dof = 200;
  * @brief Evaluate \f$\chi^2\f$ for one dof.
  *
  * For each measurement of \f$x_i\f$, the error is referred to the actual counting so
- * \f$\sigma_i^2 = x_i\f$ and the \f$\chi^2_i\f$ is evaluating using _that_ error.
+ * \f$\sigma_i^2 = x_i\f$ (here I am using the fact that measures are distributed according
+ *  to a Poisson function) and the \f$\chi^2_i\f$ is evaluating using _that_ error.
  *
  * @return \f$\chi^2 = (x-\mu)^2\!/\sigma^2 = (x - \lambda)^2\!/x\f$. 
  */
@@ -69,6 +68,9 @@ ChiSquare( double x ) {
 	return ( x - lambda ) * ( x - lambda ) / x;
 }
 
+/**
+ * @brief Maximum between two numbers.
+ */
 	inline double
 max( double a, double b ) {
 	return ( ( a > b ) ? a : b );
@@ -106,6 +108,13 @@ distro_for_sim ( void ) {
 //main( void ) {
 	clock_t start = clock();
 
+
+	//----------------------------------------------------------------------------------//
+	//
+	// Assignments (a) and (b)
+	//
+	//----------------------------------------------------------------------------------//
+
 	TH1I *histoPoisson = new TH1I( "", "Poisson (#lambda = " + TString::Itoa( lambda, 10 ) + ")",
 			4 * st_dev + 1,
 			lambda - 2 * st_dev - .5,
@@ -137,11 +146,13 @@ distro_for_sim ( void ) {
 	histoChiSquare->Draw();
 	CSP->Draw( "same" );
 
+//	return 0;
 
 	// -------------------------------------------------------------------------------- //
 	
 	/**
-	 * Now go from one RV to five or ten RVs.
+	 * @par
+	 * Now we go from one RV to five or ten RVs.
 	 */
 
 
@@ -166,6 +177,17 @@ distro_for_sim ( void ) {
 
 	//		std::cout << "Step " << n << " of " << N << std::endl;
 			for ( register unsigned short d = 0; d < dof; ++ d ) {
+
+				/**
+				 * @par
+				 * _Multiple DOF \f$\chi^2\f$_.
+				 *
+				 * Here I am evaluating the \f$\chi^2\f$ for a single measure involving
+				 * `dof` degrees of freedom. The \f$\chi^2\f$ is the sum of the single
+				 * \f$\chi^2_i\f$ for each dof. At the end I take the histogram of the
+				 * sum. This is why \f$2000\f$ measures of a single DOF differ from
+				 * \f$500\f$ measures of 4 DOF.
+				 */
 				combChiSquare += ChiSquare( gRandom->Poisson( lambda ) );
 			}
 
@@ -179,7 +201,7 @@ distro_for_sim ( void ) {
 	histoCombChiSquare->Scale( 1. / histoCombChiSquare->Integral(), "WIDTH" );
 	histoCombChiSquare->Draw();
 
-	// Formula for the ChiSquare
+	// Formula for the Combined ChiSquare (for Poisson)
 	TF1 *CCSP = new TF1("#chi^{2}-distribution", ChiSquarePDF,
 			max( 0., dof - 3. * Sqrt( 2 * dof )),
 			dof + 3. * Sqrt( 2 * dof ),
@@ -200,17 +222,35 @@ distro_for_sim ( void ) {
 
 
 	/**
+	 * @par
+	 * _Point (d)_.
+	 *	
+	 * When only 50 countings are expected, the Poisson distribution is not well-approximated
+	 * by a Gaussian one. We'll see that the \f$\chi^2\f$ distribution for our measures
+	 * is not fitted by the curve we expect (which has been derived assuming that measures
+	 * are distributed according to a Gaussian).
+	 *
+	 * This deviation between actual \f$\chi^2\f$-hisotgram and expected shape will also 
+	 * appear in the case of 10 DOF. In that plot, both the peak and the tail of the 
+	 * distribution will be signigicantly different from the expected curve.
+	 *
 	 * When \f$\lambda = 50\f$ the Central Theorem Limit is no more satisfied thus the
 	 * Poissonian distribution is not well-fitted by a gaussian. Our derivation for the
 	 * \f$\chi^2\f$-distribution is valid for Gaussian-distributed RVs so everything will
-	 * screw up!
+	 * screw up (i.e. the ChiSquare hypothesis test is no longer a good test because it 
+	 * does not apply)!
+	 *
 	 */
 
+
 	/**
-	 * When the number of dof is \f$n = 200\f$, then the \f$\chi^2\f$ distribution is well-approximated
-	 * by the Gaussian one with \f$(\mu,\sigma^2) = (n, 2n) \f$. Also in this case, the 
-	 * parameter \f$\lambda\f$ has to be _large enought_ for the Poisson distribution
-	 * to be approximated with a Gaussian!
+	 * @par
+	 * _Point (e)_.
+	 *
+	 * When the number of dof is \f$n = 200\f$, then the \f$\chi^2\f$ distribution is
+	 * well-approximated by the Gaussian one with \f$(\mu,\sigma^2) = (n, 2n) \f$. Also
+	 * in this case, the parameter \f$\lambda\f$ has to be _large enought_ for the Poisson
+	 * distribution to be approximated with a Gaussian!
 	 */
 
 	std::cout << "Time: " << (double) ( clock() - start ) / CLOCKS_PER_SEC << std::endl;
