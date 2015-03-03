@@ -2,6 +2,11 @@
  *
  *
  *           @name  least_square_polynomial.C
+ *          @brief  
+ *
+ *          Example usage:
+ *          @code
+ *          @endcode
  *
  *        @version  1.0
  *           @date  01/17/2015 (02:15:42 PM)
@@ -11,11 +16,6 @@
  *
  *         @author  P. Di Giglio (github.com/pdigiglio), <p.digiglio91@gmail.com>
  *        @company  
- *          @brief  
- *
- *          Example usage:
- *          @code
- *          @endcode
  *
  *
  */
@@ -35,30 +35,49 @@ const unsigned int MaxDOF = 5;
 	int
 least_square_polynomial ( TString dataPointFile = "LSDataPoints.dat" ) {
 
-	/** Define a `TGraphErrors` containing data points. */
+	/**
+	 * @par
+	 * _Setup environment_.
+	 *
+	 * Define a `TGraphErrors` containing data points.
+	 *
+	 * Declare a dummy function to handle fit \f$\chi^2\f$ and parameters and a dummy
+	 * string to generate the polynomials names.
+	 */
 	TGraphErrors *dataPointGraph = new TGraphErrors( dataPointFile, "%lg %lg %lg" );
 //	dataPointGraph->Draw();
 
-	TCanvas *canv[MaxDOF] = {};
-
-	/// Declare a dummy function to handle fit \f$\chi^2\f$ and parameters and a dummy
-	/// string to generate the polynomials names.
 	TF1 *f[MaxDOF] = {};
 	TString fitFunctionName = "";
+
+
+	TCanvas *canv[MaxDOF] = {};
 	for ( unsigned int d = 0; d < MaxDOF; ++ d ) {
 		std::cout << std::endl << " >> Using " <<  d << "-degree(s) polynomial for fit!" << std::endl;
 
 
 		/**
+		 * @par
+		 * _Fit_.
+		 *
 		 * Use predefined polynomial functions to fit data. The number is referred to the
 		 * degree of the polynomial, i.e. \f$P_0 \equiv p_0\f$, \f$P_1(x) = p_0 + p_1x\f$
 		 * and so on.
+		 *
+		 *
+		 * `+0Q` in the fit options = add function (don't replace it), don't draw it after the
+		 * fit and don't print fit results on screen.
+		 *
+		 *
+		 * __Spoiler:__ you'll find out that the "right" polynomial to fit data is the one
+		 * with 2 DOF. We've got 5 data points so it corresponds to \f$P_2(x) = p_0 + p_1x + p_2x^2\f$.
+		 * With this function \f$\chi^2 = 2.61\f$ and the expected value is \f$2 \pm 2\f$.
+		 *
+		 * With less DOF (i.e. higher grade polynomial) we'll go into _over-fitting_ regime:
+		 * the \f$\chi^2\f$ value will be very low. Anyway this is only due to a huge number
+		 * of parameters, it's not a sign of a good fit.
 		 */
 		fitFunctionName = "pol" + TString::Itoa( d, 10 );
-		/* 
-		 * "+0Q" in the options = add function (don't replace it), don't draw it after the
-		 * fit and don't print fit results on screen
-		 */
 		dataPointGraph->Fit( fitFunctionName, "+0Q" );
 
 		// get function and print fit parameters
@@ -78,24 +97,40 @@ least_square_polynomial ( TString dataPointFile = "LSDataPoints.dat" ) {
 	//-----------------------------------------------------------------------------------//
 	
 	/**
+	 * @par
+	 * _Hisogram for `pol0`_.
+	 *
 	 * Plot the histogram for the 0-degree polynomial \f$\chi^2\f$ (i.e. 1 free parameter)
 	 * around its minimum.
+	 * 
+	 * I set the histogram range to \f$\hat p_0 \pm\sigma_{\hat p_0}\f$ so that it's clear
+	 * that \f$\chi^2(\hat p_0 \pm \sigma_{\hat p_0}) - \chi^2(\hat p_0 ) = 1\f$.
+	 *
+	 * The method `TGraphErrors::Chisquare( TF1 f )` returns the \f$\chi^2_\textup{min}\f$
+	 * for the function `f`.
 	 */
 	TF1 *pol = new TF1( "name", "pol0" );
 
-	/**
-	 * When I set the histogram range to \f$\hat p_0 \pm\sigma_{\hat p_0}\f$ I see that
-	 * \f$\chi^2(\hat p_0 \pm \sigma_{\hat p_0}) - \chi^2(\hat p_0 ) = 1\f$.
-	 */
+	// get the std deviation of the parameter
 	const double halfRange = f[0]->GetParError(0);//.02;
+	// lower bound = best estimate - std. deviation
 	const double parMin = f[0]->GetParameter(0) - halfRange;
+	// upper bound = best estimate + std. deviation
+	//             = lower bound + 2 * std. deviation
 	const double parMax = parMin + 2 * halfRange;
 
+	// number of bins
 	const unsigned int parBins = 100;
 
+	// define and fill the histogram
 	TH1D *oneParam = new TH1D( "dummy", "", parBins, parMin, parMax );
 	for ( unsigned int b = 0; b < parBins; ++ b ) {
+		// set parameter to value of b-th bin
 		pol->SetParameter( 0, parMin + b * 2 * halfRange / parBins );
+
+		// fill the histogram with difference between ChiSquare of my dummy function (whose parameter
+		// changes along the loop) and the ChiSquare of the function I used to actually fit data (i.e.
+		// the function with the minimum ChiSquare value).
 		oneParam->SetBinContent( b + 1, dataPointGraph->Chisquare( pol ) -  dataPointGraph->Chisquare( f[0] ));
 	}
 
@@ -104,6 +139,9 @@ least_square_polynomial ( TString dataPointFile = "LSDataPoints.dat" ) {
 	delete pol;
 
 	/**
+	 * @par
+	 * _Histogram for `pol1`_.
+	 *
 	 * Plot the histogram for the 1-degree polynomial \f$\chi^2\f$ (i.e. 2 free parameter)
 	 * around its minimum.
 	 */
@@ -136,19 +174,10 @@ least_square_polynomial ( TString dataPointFile = "LSDataPoints.dat" ) {
 	}
 
 	new TCanvas();
-	twoParam->Draw( "colz" );
-//	cout << f[0]->GetParameter(0) << endl;
-//	pol->SetParameter( 0, f[0]->GetParameter(0)  );
-//	cout << dataPointGraph->Chisquare( pol ) -  dataPointGraph->Chisquare( f[0] ) << endl;
+	twoParam->DrawCopy( "colz" );
 
 //	new TCanvas();
-	/**
-	 * The method `TGraphErrors::Chisquare( TF1 f )` returns the f$\chi^2_\textup{min}\f$
-	 * for the function `f`.
-	 */
-//	dataPointGraph->Chisquare( f[0] );
-
-//	delete [] canv;
+//	twoParam->DrawCopy( "surf1" ); // XXX DON'T TRY THIS @ HOME
 
 	return 0;
 }
