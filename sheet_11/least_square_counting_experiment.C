@@ -102,15 +102,39 @@ least_square_counting_experiment () {
 
 	/* histograms for the fitting parameters */
 	TH1D *histoInt[] = {
-		new TH1D( "normInt", "Best estimates for the norm", 100, -2.5, 2.5 ),
-		new TH1D( "meanInt", "Best estimates for the mean", 100, -2.5, 2.5 ),
-		new TH1D( "sigmaInt", "Best estimates for the sigma", 100, -2.5, 2.5 ),
+		new TH1D( "normInt", "Best estimates for the norm [integral]", 100, -2.5, 2.5 ),
+		new TH1D( "meanInt", "Best estimates for the mean [integral]", 100, -2.5, 2.5 ),
+		new TH1D( "sigmaInt", "Best estimates for the sigma [integral]", 100, -2.5, 2.5 )
+	};
+
+	TH1D *histoChiSquareInt[] = {
+		new TH1D( "normChiSquareInt", "#chi^{2}-distribution for norm [integral]", 100, 0, 7 + 2 * TMath::Sqrt( 14. ) ),
+		new TH1D( "meanChiSquareInt", "#chi^{2}-distribution for mean [integral]", 100, 0, 7 + 2 * TMath::Sqrt( 14. ) ),
+		new TH1D( "sigmaChiSquareInt", "#chi^{2}-distribution for sigma [integral]", 100, 0, 7 + 2 * TMath::Sqrt( 14. ) )
+	};
+
+	TH1D *histoChiSquareProbInt[] = {
+		new TH1D( "normChiSquareProbInt", "#chi^{2}-probability distribution for norm [integral]", 100, 0, 1 ),
+		new TH1D( "meanChiSquareProbInt", "#chi^{2}-probability distribution for mean [integral]", 100, 0, 1 ),
+		new TH1D( "sigmaChiSquareProbInt", "#chi^{2}-probability distribution for sigma [integral]", 100, 0, 1 )
 	};
 
 	TH1D *histoApp[] = {
 		new TH1D( "normApp", "Best estimates for the norm", 100, -2.5, 2.5 ),
 		new TH1D( "meanApp", "Best estimates for the mean", 100, -2.5, 2.5 ),
-		new TH1D( "sigmaApp", "Best estimates for the sigma", 100, -2.5, 2.5 ),
+		new TH1D( "sigmaApp", "Best estimates for the sigma", 100, -2.5, 2.5 )
+	};
+
+	TH1D *histoChiSquareApp[] = {
+		new TH1D( "normChiSquareApp", "#chi^{2}-distribution for norm [approximate]", 100, 0, 7 + 2 * TMath::Sqrt( 14. ) ),
+		new TH1D( "meanChiSquareApp", "#chi^{2}-distribution for mean [approximate]", 100, 0, 7 + 2 * TMath::Sqrt( 14. ) ),
+		new TH1D( "sigmaChiSquareApp", "#chi^{2}-distribution for sigma [approximate]", 100, 0, 7 + 2 * TMath::Sqrt( 14. ) )
+	};
+
+	TH1D *histoChiSquareProbApp[] = {
+		new TH1D( "normChiSquareProbApp", "#chi^{2}-probability distribution for norm [approximate]", 100, 0, 1 ),
+		new TH1D( "meanChiSquareProbApp", "#chi^{2}-probability distribution for mean [approximate]", 100, 0, 1 ),
+		new TH1D( "sigmaChiSquareProbApp", "#chi^{2}-probability distribution for sigma [approximate]", 100, 0, 1 )
 	};
 
 	/* dummy help functin pointer */
@@ -177,27 +201,32 @@ least_square_counting_experiment () {
 			 * @endcode
 			 *
 			 * _They sould all be compatible with 0._
+			 *
+			 *
+			 * It can also be seen from the distribution of \f$P(\chi^2>\chi^2_\textup{obs})\f$
+			 * that when using Pearson's method the distribution is closer to the one we 
+			 * expect for the Gussian (i.e. a flat distribution).
 			 * 
 			 */
 
 			// Neyman's \f$\chi^2\f$.
-			error = gRandom->Poisson( gaussFunc->Integral( xMin + b * binWidth, xMin + ( b + 1 ) * binWidth) );
-			count = error;
+//			error = gRandom->Poisson( gaussFunc->Integral( xMin + b * binWidth, xMin + ( b + 1 ) * binWidth) );
+//			count = error;
 
 			// Pearsons's \f$\chi^2\f$.
-//			error = gaussFunc->Integral( xMin + b * binWidth, xMin + ( b + 1 ) * binWidth );
-//			count = gRandom->Poisson( error );
+			error = gaussFunc->Integral( xMin + b * binWidth, xMin + ( b + 1 ) * binWidth );
+			count = gRandom->Poisson( error );
 
 			histoIntegral->SetBinContent( b + 1, count );
 			histoIntegral->SetBinError( b + 1, TMath::Sqrt( error ) );
 
 			// Neyman's \f$\chi^2\f$.
-			error = gRandom->Poisson( binWidth * gaussFunc->Eval( xMin + ( b + .5 ) * binWidth ) );
-			count = error;
+//			error = gRandom->Poisson( binWidth * gaussFunc->Eval( xMin + ( b + .5 ) * binWidth ) );
+//			count = error;
 
 			// Neyman's \f$\chi^2\f$.
-//			error = binWidth * gaussFunc->Eval( xMin + ( b + .5 ) * binWidth );
-//			count = gRandom->Poisson( error );
+			error = binWidth * gaussFunc->Eval( xMin + ( b + .5 ) * binWidth );
+			count = gRandom->Poisson( error );
 
 			histo->SetBinContent( b + 1, count );
 			histo->SetBinError( b + 1, TMath::Sqrt( error ) );
@@ -234,6 +263,12 @@ least_square_counting_experiment () {
 		dummy = histoIntegral->GetFunction( "gausn" );
 		for ( unsigned short int m = 0; m < 3; ++ m ) {
 			histoInt[m]->Fill( ( dummy->GetParameter( m ) - par[m] ) / dummy->GetParError( m ) );
+		
+			histoChiSquareInt[m]->Fill( dummy->GetChisquare() );
+			histoChiSquareProbInt[m]->Fill( TMath::Prob( dummy->GetChisquare(), dummy->GetNDF() ) );
+
+//			cout << dummy->GetNDF() << endl;
+
 //			cout << ( dummy->GetParameter( m ) - par[m] ) / dummy->GetParError( 1 ) << endl;
 
 		}
@@ -252,6 +287,9 @@ least_square_counting_experiment () {
 		dummy = histo->GetFunction( "gausn" );
 		for ( unsigned short int m = 0; m < 3; ++ m ) {
 			histoApp[m]->Fill( ( dummy->GetParameter( m ) - par[m] ) / dummy->GetParError( m ) );
+
+			histoChiSquareApp[m]->Fill( dummy->GetChisquare() );
+			histoChiSquareProbApp[m]->Fill( TMath::Prob( dummy->GetChisquare(), dummy->GetNDF() ) );
 		}
 
 		/* delete the histograms to avoid memory leacks */
@@ -269,15 +307,29 @@ least_square_counting_experiment () {
 	new TCanvas();
 	histoInt[0]->Draw();
 	histoInt[0]->Fit( "gausn", "Q" );
+
+	new TCanvas();
+	histoChiSquareInt[0]->Draw();
+	
+	new TCanvas();
+	histoChiSquareProbInt[0]->Draw();
+	
 	cout << "HistoIntegral normalization: "
 		 << histoInt[0]->GetFunction( "gausn" )->GetParameter(1)
 		 << " +/- "
 		 << histoInt[0]->GetFunction( "gausn" )->GetParError(1)
 		 << endl;
-	
+
 	new TCanvas();
 	histoInt[1]->Draw();
 	histoInt[1]->Fit( "gausn", "Q" );
+
+	new TCanvas();
+	histoChiSquareInt[1]->Draw();
+	
+	new TCanvas();
+	histoChiSquareProbInt[1]->Draw();
+	
 	cout << "HistoIntegral mean: "
 		 << histoInt[1]->GetFunction( "gausn" )->GetParameter(1)
 		 << " +/- "
@@ -287,6 +339,13 @@ least_square_counting_experiment () {
 	new TCanvas();
 	histoInt[2]->Draw();
 	histoInt[2]->Fit( "gausn", "Q" );
+
+	new TCanvas();
+	histoChiSquareInt[2]->Draw();
+	
+	new TCanvas();
+	histoChiSquareProbInt[2]->Draw();
+
 	cout << "HistoIntegral sigma: "
 		 << histoInt[2]->GetFunction( "gausn" )->GetParameter(1)
 		 << " +/- "
@@ -296,6 +355,13 @@ least_square_counting_experiment () {
 	new TCanvas();
 	histoApp[0]->Draw();
 	histoApp[0]->Fit( "gausn", "Q" );
+
+	new TCanvas();
+	histoChiSquareApp[0]->Draw();
+	
+	new TCanvas();
+	histoChiSquareProbApp[0]->Draw();
+	
 	cout << "HistoApp normalization: "
 		 << histoApp[0]->GetFunction( "gausn" )->GetParameter(1)
 		 << " +/- "
@@ -305,6 +371,13 @@ least_square_counting_experiment () {
 	new TCanvas();
 	histoApp[1]->Draw();
 	histoApp[1]->Fit( "gausn", "Q" );
+
+	new TCanvas();
+	histoChiSquareApp[1]->Draw();
+	
+	new TCanvas();
+	histoChiSquareProbApp[1]->Draw();
+	
 	cout << "HistoApp mean: "
 		 << histoApp[1]->GetFunction( "gausn" )->GetParameter(1)
 		 << " +/- "
@@ -314,6 +387,13 @@ least_square_counting_experiment () {
 	new TCanvas();
 	histoApp[2]->Draw();
 	histoApp[2]->Fit( "gausn", "Q" );
+
+	new TCanvas();
+	histoChiSquareApp[2]->Draw();
+	
+	new TCanvas();
+	histoChiSquareProbApp[2]->Draw();
+	
 	cout << "HistoApp sigma: "
 		 << histoApp[2]->GetFunction( "gausn" )->GetParameter(1)
 		 << " +/- "
