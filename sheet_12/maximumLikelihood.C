@@ -2,21 +2,12 @@
  *
  *
  *           @name  maximumLikelihood.C
+ *          @brief  
  *
  *        @version  1.0
  *           @date  03/11/2015 (08:40:13 PM)
- *       @revision  none
- *       @compiler  gcc
- *
  *
  *         @author  P. Di Giglio (github.com/pdigiglio), <p.digiglio91@gmail.com>
- *        @company  
- *          @brief  
- *
- *          Example usage:
- *          @code
- *          @endcode
- *
  *
  */
 
@@ -29,14 +20,20 @@
 using namespace std;
 using namespace TMath;
 
-/** @brief Bins of the histogram. */
+/**
+ * @brief Bins of the histogram.
+ */
 const unsigned short int nBins = 1000;
 const  double xMin =  0.;
 const  double xMax = 10.;
 
 const double binSize = ( xMax - xMin ) / nBins;
-/** @brief Number of measures. */
+
+/**
+ * @brief Number of measures.
+ */
 const unsigned int nMeasures = 100;
+
 /**
  * @brief Number of experiment
  *
@@ -44,7 +41,9 @@ const unsigned int nMeasures = 100;
  */
 const unsigned int nExperiments = 10000;
 
-/** @brief Decay rate */
+/**
+ * @brief Decay rate.
+ */
 const double tau = 1.;
 
 /**
@@ -60,6 +59,18 @@ decayPDF( double x[], double p[] ) {
 	return ( p[1] / p[0] ) * TMath::Exp( - x[0] / p[0] );
 }
 
+/**
+ * @brief Gaussian function.
+ *
+ * @param p[0] normalization \f$N\f$.
+ * @param p[1] mean \f$\mu\f$.
+ * @param p[2] standard deviation \f$\sigma\f$.
+ *
+ * @return
+ * \f[
+ *  G(x;N,\mu,\sigma) = N\,\frac{\mathrm{e}^{-(x-\mu)^2\!/2\sigma^2}}{\sqrt{2\pi\sigma^2}}	
+ * \f]
+ */
 	inline double
 Gauss( double x[], double p[] ) {
 	return p[0] * Exp( - .5 * Power( ( x[0] - p[1] ) / p[2] , 2. ) ) / Sqrt( 2 * Pi() * p[2] * p[2] );
@@ -82,7 +93,7 @@ maximumLikelihood () {
 
 	for ( unsigned int trial = 0; trial < nExperiments; ++ trial ) {
 
-		/* If I change the range, the fit sucks */
+		/* If I change the range, the generated histogram (and the fit) sucks */
 		expDecayHisto = new TH1F(
 				"expDecayHisto",
 				"",
